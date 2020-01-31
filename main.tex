@@ -53,7 +53,8 @@
   emphstyle=[1]{\scshape\color{blue!60!black}},
   emph=[2]{
   then,
-  end
+  end,
+  function,
   },
   emphstyle=[2]{\bfseries\color{red!60!black}},
 }
@@ -184,7 +185,44 @@ Man kann auf das MCTS-Verfahren das bereits bekannte {\itshape Upper Confidence 
 \end{itemize}
 
 
+\subsection{Game Playing}
+Die nachfolgenden Strategien sind für Spiele entworfen, in denen zwei Spieler gegeneinader antreten.
+
+
+04/28ff
+\paragraph{Minimax}
+Die Idee des Minimax ist, den Pfad auszuwählen, der bei optimalem Opponenten noch den größten Gewinn verspricht.
+
+Fassen wir den Gewinn des Spiels als eine Zahl (Reward) auf, lässt sich dieses Prinzip als rundenweises Minimieren bzw. Maximieren auffassen.
+Der Spieler möchte den Reward maximieren, während das Ziel des Gegners ist, den Reward des Spielers zu minimieren. 
+
+Bei einer Entscheidung des Spielers wird also der Pfad gewählt, der maximalen Gewinn verspricht. Simulieren wir nun Züge des Gegners, gehen wir von optimalem Handeln aus und lassen den Gegner den Reward minimieren. 
+
+MAX- MIN- Runden
+
+
+
+Minimax findet einen optimalen Pfad, wenn der Baum endlich ist.
+Allerdings wird ein optimaler Pfad nur dann gefunden wenn die Annahme, dass der Gegner optimal spielt stimmt. Ansonsten ist das Verhalten unklar und möglicherweise sehr schlecht.
+
+Sei $b$ der branching factor, also die Zahl der möglichen Entscheidungen pro Zug (oder zumindest ein gutes Mittel) und $m$ die Zahl der Züge. Dann ist der Zeitaufwand die Größe des Baums, also $\mathcal O(b^m)$. Der Platzaufwand ist $\mathcal O(b*m)$, wie für eine Tiefensuche üblich.
+
+\paragraph{$\alpha$-$\beta$ pruning}
+Mit dem \emph{$\alpha$-$\beta$ pruning} können wir eine Verbesserung des Minimax-Verfahrens schaffen. 
+Für viele Teilbäume kann schon sehr früh entschieden werden, dass sie keine guten Spielausgänge versprechen. Durch pruning des Baums kann der Zeitaufwand deutlich verbessert werden.
+
+
+
+\paragraph{UCT for games}
+
+
+
+
+
+
+
 \section{Markov-Entscheidungsprozesse (MDP)}
+Bisher haben wir nur deterministische Prozesse betrachtet, doch es gibt natürlich viele Anwendungsfälle in denen diese simple Betrachtungsweise nicht ausreicht.
 Ein Markov-Entscheidungsprozess ist eine stochastische Formalisierung des Banditenproblems. Wir betrachten einen Agenten, der sich in einer Welt befindet. Das gesamte System befindet sich in einem Zustand $s$, der Agent kann Aktionen $a$ ausführen, die einen Zustandsübergang hevorrufen, er stellt also die Abbildung
 \begin{equation*}
 	(s_{0:t},a_{0:t},r_{0:t})\mapsto a_{t+1}
@@ -312,10 +350,72 @@ bis das Abbruchkriterium
 	\max_s|V_{k+1}(s)<V_k(s)|\leq \epsilon
 \end{equation*}
 erreicht wird.
+Die Valueiteration konvergiert gegen $V^\ast$.
 
+\paragraph{Policy Evaluation}\label{policyEvaluation}
+Anstatt eine optimale Valuefunktion zu berechnen, ist es natürlich genauso möglich die Valuefunktion $V^\pi$ einer gegebenen Policy $\pi$ zu berechnen. Dies funktioniert analog zur Value-Iteration mit dem Iterationsschritt
+\begin{equation*}
+	V_{k+1}^\pi(s)=R(s,\pi(s))+\gamma\sum_{s'}P(s'|s,\pi(s))V_k^\pi(s').
+\end{equation*}
+Genauso kann man auch die Matrixinversion
+\begin{equation*}
+	\mathbf V^\pi=(\mathbf I-\gamma\mathbf P^\pi)^{-1}\mathbf R^\pi
+\end{equation*}
+berechen.
 
 \subsection{Q-Funktion}
+Die Q-Funktion ist die sogenannte State Action Value function. Sie gibt den Wert eines Zustands, gegeben der ersten ausgeführten Aktion an.
+\begin{equation*}
+	Q^\pi(s,a)=\E\set{r_0+\gamma r_1+\gamma^2 r_2+\ldots}{s_0=s,a_0=0;\pi}
+\end{equation*}
+Dies können wir analog zur Valuefunktion wieder rekursiv schreiben als
+\begin{align*}
+	Q^\pi(s,a)=R(s,a)+\gamma\sum_{s'}P(s'|s,a)Q^\pi(s',\pi(s')).
+\end{align*}
+Der Zusammenhang zur Valuefunktion ist offensichtlich
+\begin{equation*}
+	V^\pi(s)=Q^\pi(s,\pi(s)).
+\end{equation*}
+
 \subsubsection{Q-Iteration}
+Die Q-Iteration lässt sich vollkommen analog zur Value-Iteration schreiben. Es gilt 
+\begin{align*}
+	Q^\ast(s,a)=R(s,a)+\gamma\sum_{s'}P(s'\,|\,s,a)\max_{a'}Q^\ast (s',a'),
+\end{align*}
+womit wir wieder einen Algorithmus entwerfen.
+Wir initialisieren $Q_0(s,a)=0$ für alle $s,a$.
+Dann berechnen wir wiederum schrittweise für alle Kombinationen von Zuständen und Aktionen
+\begin{equation*}
+	Q_{k+1}(s,a)=R(s,a)+\gamma\sum_{s'}P(s'|s,a)\max_{a'}Q_{k}(s',a')
+\end{equation*}
+bis das Abbruchkriterium 
+\begin{equation*}
+	\max_{s,a}|Q_{k+1}(s,a)-Q_k(s,a)|\leq \epsilon
+\end{equation*}
+erreicht wird.
+Die Q-Iteration konvergiert gegen $Q^\ast$.
+
+\paragraph{Policy Iteration}
+Man kann natürlich auch ein ähnliches iteratives Verfahren anwenden um die Policy $\pi$ schrittweise zu verbessern.
+Wir initialisieren $\pi_0$ zum Beispiel zufällig.
+Dann berechnen wir zunächst $Q^{\pi_k}$ (analog zu Policy Evaluation in \autoref{policyEvaluation}) und aktualisieren damit die Policy
+\begin{equation*}
+	\pi_{k+1}(s)=\underset a\argmax Q^{\pi_k}(s,a).
+\end{equation*}
+Dieses Verfahren heißt \emph{Policy Iteration}.
+
+
+
+
+
+
+
+\begin{align*}
+	V^\ast(s)&=\max_aQ^\ast(s,a)\\
+	&=\max_a\left[R(s,a)+\gamma\sum_{s'}P(S'\,|\, s,a)V^\ast(s')\right]
+\end{align*}
+
+
 
 \begin{itemize}
 	\item Q-Iteration und Q-Funktion 05/14ff
@@ -330,7 +430,6 @@ Partiell beobachtbare Markov-Entscheidungsprozesse (partially observable markov 
 4/22ff
 7/11ff
 
-\paragraph{Anweden von MCTS auf POMDPs}
 
 
 
@@ -391,9 +490,10 @@ Wir betrachten die genauen Unterschiede in den nachfolgenden Abschnitten.
 Im modellfreien Reinforcement-Lernen sind die Übergangsverteilungen sowie die Rewards der Zustände unbekannt, es müssen nicht einmal alle Zustände bekannt werden. 
 Ziel ist es zu lernen, den Value eines Zustands vorherzusagen. Das heißt die Algorithmen werden $V(s)$ bzw. $Q(s,a)$ schätzen.
 
+\paragraph{On-Policy vs. Off-Policy Learning}
+Es werden zwei Arten unterschieden. Ein On-Policy Lernverfahren lernt die Bewertung des Zustands und der Aktionen die von der Policy tatsächlich ausgeführt werden. Das heißt während der Agent $\pi$ ausführt wird auch $Q^\pi$ gelernt.
 
-\paragraph{On-Policy Off Policy Learning}
-
+Ein Off-Policy-Verfahren hingegen lernt die optimale $Q$-Funktion $Q^\ast$ während eine \emph{beliebige} Policy $\pi$ ausgeführt wird. Die Policy wird lediglich zum Sammeln von Daten verwendet. Die Policy, nach der der Agent handelt ist nicht die gleiche wie die gelernte.
 
 
 \subsubsection{Q-Learning}
@@ -418,7 +518,7 @@ Ist der Reward $r$ größer als der erwartete Reward, das heißt
 	r>Q_{\text{old}}(s,a)-\gamma \max_{a'}Q_{\text{old}}(s',a'),
 \end{equation*}
 dann wird $Q_{\text{new}}(s,a)$ erhöht. Analog wird der Wert verringert, wenn $r$ kleiner als die Erwartung ist.
-Dieses Verfahren wird \emph{Q-Learning} genannt.
+Dieses Verfahren wird \emph{Q-Learning} genannt, es ist ein Off-Policy-Lernalgorithmus.
 
 Besonders bemerkenswert ist, dass eine mit Q-Learning gelernte Q-Funktion beweisbar gegen $Q^\ast$ konvergiert. Für den Beweis wurde lediglich die \emph{mixing property} angenommen. Das heißt, dass es von jedem Zustand aus eine Wahrscheinlichkeit $>0$ gibt in jeden anderen Zustand zu gelangen.
 
@@ -446,15 +546,19 @@ Damit wird sichergestellt, dass der Algorithmus genügend exploriert und neue Da
 Desweiteren wird der Algorithmus in sogenannten Episoden ausgeführt, nach denen jedes mal der Startzustand wiederhergestellt wird bevor der Agent weiter agieren kann. Oft ist die Anzahl der auszuführenden Schritte in einer Episode festgelegt. Episoden stellen sicher, dass der Agent nicht in non-return areas gefangen bleibt und Lernen für immer verhindert wird (Klippe heruntergefallen, Objekt mit dem interagiert wird ist kaputt,\ldots).
 
 \subsubsection{Varianten des Q-Learning}
-06/15ff
+Es gibt viele Varianten des Basis-Q-Learning. Sie
 \paragraph{Eligibility Traces}
+06/16ff
+
+
+06/15ff
 \begin{itemize}
 	\item Eligibility Traces
 	\item Experience Replay
 \end{itemize}
 \paragraph{TD}
 \paragraph{SARSA}
-\paragraph{Q(lambda)}
+\paragraph{$Q(\lambda)$}
 
 
 
@@ -481,20 +585,10 @@ Der Agent wird dann versuchen
 
 
 
+todo
 
-\begin{align}\label{Bellman1}
-	V^\ast(s)&=\max_aQ^\ast(s,a)\\
-	&=\max_a\left[R(s,a)+\gamma\sum_{s'}P(S'\,|\, s,a)V^\ast(s')\right]\nonumber
-\end{align}
-
-
-\begin{align}\label{Bellman2}
-	Q^\ast(s,a)=R(s,a)+\gamma\sum_{s'}P(s'\,|\,s,a)\max_{a'}Q^\ast (s',a')
-\end{align}
 
 \begin{itemize}
-	\item State-Action Value Funktion, Q
-	\item Q-Iteration
 	\item Belief State
 	\item Lernen in MDPs, modellbasiert/modellfrei
 	\item Diskussion Grenzen von modellfreiem Lernen 
@@ -568,8 +662,42 @@ Es gilt $I_1=\simpleset{W},I_2=\simpleset{W,N},I_3=\simpleset{W,S}$ und $I_4=\si
 	\item $C_1$ ist ein sogenanntes \emph{unäres Constraint}, da $|I_1|=1$.
 	Ein Beispiel wäre $T\neq \text{rot}$.
 	\item Die Constraints $C_2,C_3$ sind \emph{binäre Constraints}, da $|I_2|=|I_3|=2$. Ein Beispiel wäre $W\neq N$.
-	\item Und das Constraint $I_4$ ist ein Constraint \emph{höherer Ordnung}, da $|I_4|>2$.
+	\item Und das Constraint $I_4$ ist ein \emph{Constraint höherer Ordnung}, da $|I_4|>2$.
 \end{itemize}
+
+Sind alle Domainräume endlich und haben die gleiche Größe $d=|D_i|$, dann ist der Aufwand das CSP zu lösen in $\mathcal O(d^n)$.
+
+\subsection{Lösen eines diskreten CSP}
+Der \enqo{brute force} Lösungsalgorithmus für ein CSP ist \emph{sequential assignment}. Der Algorithmus weist Variablen Werte zu, solange dies nicht den Constraints widerspricht. Implementiert wird dies als eine Tiefensuche in einem Baum mit branching factor $(n-l)d$ bei Tiefe $l$. Der Baum hat also $n!d^n$ Blätter!
+
+Eine erste Verbesserung dieses Algorithmus ist \emph{Backtracking Sequential Assignment}. Die entscheidende Erkenntnis ist, dass es für die Vollständigkeit des Algorithmus keine Rolle spielt in welcher Reihenfolge die Variablen gesetzt werden.
+Insbesondere kann man also eine Reihenfolge festlegen und damit den branching factor des Baums drastisch reduzieren. In jeder Tiefe ist der der branching factor $d$, was nur noch $d^n$ Blätter zu Folge hat.
+Hiermit erreicht man den oben angesprochenen Zeitaufwand von $\mathcal O(d^n)$.
+
+08/13
+\begin{lstlisting}
+function backtrackingSearch(csp)
+	return recBacktracking({}, csp)
+end
+
+function recBacktracking(assignment, csp)
+	if assignment.isComplete then return assignment
+	var = selectUnassignedVariable(variables(csp), assignment, csp)
+	for value in orderedDomainValues(var, assignment, csp) do
+		if value consistent with assignment given constraints(csp) then
+			add [var = value] to assignment
+			result = recursiveBacktracking(assignment, csp)
+			if result != failure then return result
+			remove [var = value] from assignment
+		end
+	end
+	return failure
+end
+\end{lstlisting}
+
+\paragraph{Möglichkeiten der weiteren Verbesserung}
+06/15ff
+
 
 \subsection{Inferenz}
 
@@ -585,6 +713,13 @@ Es gilt $I_1=\simpleset{W},I_2=\simpleset{W,N},I_3=\simpleset{W,S}$ und $I_4=\si
 
 
 \section{Graphische Modelle von probabilistischen Problemen}
+
+
+
+
+
+
+
 \begin{itemize}
 	\item Bayesnetze
 	\item Konditionale Unabhängigkeit
@@ -602,6 +737,65 @@ Es gilt $I_1=\simpleset{W},I_2=\simpleset{W,N},I_3=\simpleset{W,S}$ und $I_4=\si
 
 
 \section{Dynamische Modelle}
+\subsection{Markovprozesse und -ketten}
+Markovprozess erster Ordnung
+\vspace{1em}
+\noindent
+\begin{center}
+	\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=1.3cm,
+                    semithick, baseline=1em]
+	  \tikzstyle{every state}=[fill=white,draw=black,text=black,text width=0.5cm, align=center]
+
+	  \node[state] 		   (x-2)                    	{\scriptsize$X_{t-2}$};
+	  \node[state]         (x-1) [right of=x-2] 		{\scriptsize$X_{t-1}$};
+	  \node[state]         (x) [right of=x-1] 		{\scriptsize$X_{t}$};
+
+	  \node[state]         (x1) [right of=x] 		{\scriptsize$X_{t+1}$};
+	  \node[state]         (x2) [right of=x1]       {\scriptsize$X_{t+2}$};
+
+	  \node[text width=0pt]			(start) [left=0.5cm of x-2] {};
+	  \node[text width=0pt]			(end) [right=0.5cm of x2] {};
+
+	  \path (start) edge (x-2)
+	  (x-2) edge (x-1)
+	  (x-1) edge (x)
+	  (x) edge (x1)
+	  (x1) edge (x2)
+	  (x2) edge (end);
+	\end{tikzpicture}
+\end{center}
+\vspace{1em}
+Markovprozess zweiter Ordnung
+\vspace{1em}
+\noindent
+\begin{center}
+	\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=1.3cm,
+                    semithick, baseline=1em]
+	  \tikzstyle{every state}=[fill=white,draw=black,text=black,text width=0.5cm, align=center]
+
+	  \node[state] 		   (x-2)                    	{\scriptsize$X_{t-2}$};
+	  \node[state]         (x-1) [right of=x-2] 		{\scriptsize$X_{t-1}$};
+	  \node[state]         (x) [right of=x-1] 		{\scriptsize$X_{t}$};
+
+	  \node[state]         (x1) [right of=x] 		{\scriptsize$X_{t+1}$};
+	  \node[state]         (x2) [right of=x1]       {\scriptsize$X_{t+2}$};
+
+	  \node[text width=0pt]			(start) [left=0.5cm of x-2] {};
+	  \node[text width=0pt]			(end) [right=0.5cm of x2] {};
+
+	  \path (start) edge (x-2) edge[in=135, out=45] (x-1)
+	  (x-2) edge (x-1) edge[in=135, out=45] (x)
+	  (x-1) edge (x) edge[in=135, out=45] (x1)
+	  (x) edge (x1) edge[in=135, out=45] (x2)
+	  (x1) edge (x2) edge[in=135, out=45] (end)
+	  (x2) edge (end);
+	\end{tikzpicture}
+\end{center}
+\vspace{1em}
+
+
+
+
 \begin{itemize}
 	\item Markov Prozesse
 	\item Hidden Markov Models
