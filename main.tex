@@ -209,7 +209,7 @@ Sei $b$ der branching factor, also die Zahl der möglichen Entscheidungen pro Zu
 
 \paragraph{$\alpha$-$\beta$ pruning}
 Mit dem \emph{$\alpha$-$\beta$ pruning} können wir eine Verbesserung des Minimax-Verfahrens schaffen. 
-Für viele Teilbäume kann schon sehr früh entschieden werden, dass sie keine guten Spielausgänge versprechen. Durch pruning des Baums kann der Zeitaufwand deutlich verbessert werden.
+Für viele Teilbäume kann schon sehr früh entschieden werden, dass sie keine guten Spielausgänge versprechen. Durch pruning des Baums kann der Zeitaufwand deutlich verbessert werden, dabei bleibt das Ergebnis trotzdem unverändert.
 
 
 
@@ -633,12 +633,8 @@ Constraints Statisfaction Probleme sind häufige auftretende Probleme
 \end{definition}
 
 
-Ein CSP lässt sich als \emph{Constraint Graph} darstellen. Dies ist ein bipartiter Graph, in dem Variablen als Kreise und Constraints als Kästen dargestellt werden.
-
-Betrachten wir das folgende Beispiel
-
+Ein CSP lässt sich als \emph{Constraint Graph} darstellen. Dies ist ein bipartiter Graph, in dem Variablen als Kreise und Constraints als Kästen dargestellt werden. Ein Beispiel ist der nachfolgende Constraintgraph.
 \noindent
-\vspace{1em}
 \begin{center}
 	\begin{tikzpicture}[auto,node distance=2.5cm,semithick, baseline=1em]
 	  \tikzstyle{every state}=[fill=white,circle,draw=black,text=black,align=center]
@@ -656,11 +652,11 @@ Betrachten wir das folgende Beispiel
 	\end{tikzpicture}
 \end{center}
 \noindent
-Dieses CSP hat 4 Variablen und ebenfalls 4 Constaints. Man sieht, dass die Constraints unterschiedliche Anzahlen an Variablen beeinflussen können.
+Das zugehörige CSP hat 4 Variablen und ebenfalls 4 Constaints. Man sieht, dass die Constraints unterschiedliche Anzahlen an Variablen beeinflussen können.
 Es gilt $I_1=\simpleset{W},I_2=\simpleset{W,N},I_3=\simpleset{W,S}$ und $I_4=\simpleset{N,W,S}$. Auch möglich ist, dass eine Variable von keinem Constraint beeinflusst wird, wie an $T$ zu sehen.
 \begin{itemize}
 	\item $C_1$ ist ein sogenanntes \emph{unäres Constraint}, da $|I_1|=1$.
-	Ein Beispiel wäre $T\neq \text{rot}$.
+	Ein Beispiel wäre $W\neq \text{rot}$.
 	\item Die Constraints $C_2,C_3$ sind \emph{binäre Constraints}, da $|I_2|=|I_3|=2$. Ein Beispiel wäre $W\neq N$.
 	\item Und das Constraint $I_4$ ist ein \emph{Constraint höherer Ordnung}, da $|I_4|>2$.
 \end{itemize}
@@ -695,25 +691,167 @@ function recBacktracking(assignment, csp)
 end
 \end{lstlisting}
 
-\paragraph{Möglichkeiten der weiteren Verbesserung}
-06/15ff
+\subsection{Möglichkeiten der Verbesserung}
+Mithilfe von simplen Heuristiken kann man die Laufzeit des Lösungsalgorithmus stark verringern. Dabei gibt es mehrere Angriffspunkte zur Optimierung, wir betrachten zunächst welche Variable am besten als nächstes zur Belegung gewählt werden sollte sowie die Reihenfolge der Wertebelegungen.
+\subsubsection{Variablenreihenfolge}
+Mit der \emph{Minimum remaining Values (MRV)}-Heuristik kann man die Breite des Baums stark verringern. Wir wählen die Variable, der als nächstes ein Wert zugewiesen werden soll so, dass sie die wenigsten möglichen Wertebelegungen hat. So ist der branching factor des Baums zu Beginn klein.
 
+Hier können natürlich Fälle auftreten, bei denen diese Entscheidung nicht eindeutig ist. Wir führen die \emph{Degree Heuristic} als Tie Breaker ein. Hier wird immer die Variable als nächstes gewählt, die die meisten Constrains auf noch unbelegte Variablen hat. Damit werden gleichzeitig die möglichen Wertebelegungen der bisher unbelegten Variablen verringert.
+
+\subsubsection{Wertereihenfolge}
+Sind bei einer Variablenbelegung mehrere Werte möglich wählt man mit der \emph{Least Constraining Value}-Heuristik immer den Wert, der noch die meisten Wertebelegungen bei den noch unbelegten Variablen zulässt.
 
 \subsection{Inferenz}
+Mit den bisher besprochenen Optimierungen ist nicht alles abgedeckt. Durch Anwenden von Inferenz können wir frühzeitig feststellen ob eine Lösung überhaupt noch möglich ist, was natürlich bedeutet dass wir das Backtracking früher beginnen können.
+\subsubsection{Constraint Propagation}
 
 
 
-\begin{itemize}
-	\item Inferenz
-	\item Constraintgraphen
+
+
+
+
+\noindent
+\vspace{1em}
+\begin{center}
+	\begin{tikzpicture}[auto,node distance=2.5cm,semithick, baseline=1em]
+	  \tikzstyle{every state}=[fill=white,circle,draw=black,text=black,align=center]
+	  \tikzstyle{constraint}=[rectangle, fill=black, below=-3pt]
+
+	  \node[state] (N) {N};
+	  \node[state] (W) [below left=0.7cm and 1.2cm of N] {W};
+	  \node[state] (S) [below of=N] {S};
+	  \node[state] (T) [right of=N] {T};
+	  %\node[state] (E) [right of=S] {E};
+	  %\node[state] (A) [below  right=1.2cm and 0.7cm of S] {A};
+
+	  \path 
+	  (N) edge node[constraint, label={above left:$W\neq N$},below=-3pt]{} (W)
+	  edge node[constraint, label={above:$N\neq T$}] {} (T)
+	  
+	  %(T) edge node[constraint, label={right:$T\neq E$}] {} (E)
+
+	  (S) edge node[constraint, label={below right:$S\neq T$}] {} (T)
+	  %edge node[constraint, label={above:$S\neq E$}] {} (E)
+	  edge node[constraint, label={left:$N\neq S$}]{} (N)
+	  edge node[constraint, label={below left:$W\neq S$}]{} (W)
+	  
+	  %(A) edge node[constraint, label={right:$A\neq E$}] {} (E)
+	  %edge node[constraint, label={left:$S\neq E$}] {} (S)
+	  ;
+	\end{tikzpicture}
+\end{center}
+\noindent
+
+
+\noindent
+\vspace{1em}
+\begin{center}
+	\begin{tikzpicture}[auto,node distance=2.5cm,semithick, baseline=1em]
+	  \tikzstyle{every state}=[fill=white,circle,draw=black,text=black,align=center]
+	  \tikzstyle{constraint}=[rectangle, fill=black, below=-3pt]
+
+	  \node[state] (N) {N};
+	  \node[state] (W) [draw=red,below left=0.7cm and 1.2cm of N] {W};
+	  \node[state] (S) [below of=N] {S};
+	  \node[state] (T) [draw=green,right of=N] {T};
+	  %\node[state] (E) [right of=S] {E};
+	  %\node[state] (A) [below  right=1.2cm and 0.7cm of S] {A};
+
+	  \path 
+	  (N) edge node[constraint, label={above left:$W\neq N$},below=-3pt]{} (W)
+	  edge node[constraint, label={above:$N\neq T$}] {} (T)
+	  
+	  %(T) edge node[constraint, label={right:$T\neq E$}] {} (E)
+
+	  (S) edge node[constraint, label={above left:$S\neq T$}] {} (T)
+	  %edge node[constraint, label={above:$S\neq E$}] {} (E)
+	  edge node[constraint, label={left:$N\neq S$}]{} (N)
+	  edge node[constraint, label={below left:$W\neq S$}]{} (W)
+	  
+	  %(A) edge node[constraint, label={right:$A\neq E$}] {} (E)
+	  %edge node[constraint, label={left:$S\neq E$}] {} (S)
+	  ;
+	\end{tikzpicture}
+\end{center}
+\noindent
+Man würde hier bereits nach zwei Schritten sehen, dass für $N$ und $S$ jeweils nur noch ein Wert möglich ist $D_N=D_S=\simpleset{{\color{blue}\text{blau}}}$. Aber die beiden Variablen dürfen wegen dem $N\neq S$ Constraint nicht mit dem selben Wert belegt werden.
+
+
+
+
+
+
+\begin{enumerate}
 	\item Lösungsmethoden/Algorithmen: zunächst einfaches Backtracking, dann mit Heuristiken + Constraint Propagation + Arc Consistency/Propagation
-	\item 
-\end{itemize}
+\end{enumerate}
 
 
 
 \section{Graphische Modelle von probabilistischen Problemen}
+Streng genommen haben
 
+Unabhängigkeit
+\begin{equation*}
+	\independent(X,Y)\Longleftrightarrow P(X,Y)=P(X)*P(Y)
+\end{equation*}
+Konditionale Unabhängigkeit
+\begin{equation*}
+	\independent(X,Y|Z)\Longleftrightarrow P(X,Y|Z)=P(X|Z)*P(Y|Z)
+\end{equation*}
+
+
+
+
+
+\vspace{1em}
+\noindent
+\begin{center}
+	\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=1.5cm,
+                    semithick, baseline=1em]
+	  \tikzstyle{every state}=[fill=white,draw=black,text=black,text width=0.5cm, align=center]
+
+	  \node[state] 		   (X)                    	{$X$};
+	  \node[state]         (Z) [below right of=X] 		{$Z$};
+	  \node[state]         (Y) [above right of=Z] 		{$Y$};
+
+	  \path (X) edge (Z)
+	  (Y) edge (Z);
+	\end{tikzpicture}
+
+	(head to head)
+\end{center}
+
+\begin{center}
+	\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=1.5cm,
+                    semithick, baseline=1em]
+	  \tikzstyle{every state}=[fill=white,draw=black,text=black,text width=0.5cm, align=center]
+
+	  \node[state] 		   (X)                    	{$X$};
+	  \node[state]         (Z) [above right of=X] 		{$Z$};
+	  \node[state]         (Y) [below right of=Z] 		{$Y$};
+
+	  \path (Z) edge (X) edge (Y);
+	\end{tikzpicture}
+	
+	(tail to tail)
+\end{center}
+
+\begin{center}
+	\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=1.5cm,
+                    semithick, baseline=1em]
+	  \tikzstyle{every state}=[fill=white,draw=black,text=black,text width=0.5cm, align=center]
+
+	  \node[state] 		   (X)                    	{$X$};
+	  \node[state]         (Z) [above right of=X] 		{$Z$};
+	  \node[state]         (Y) [below right of=Z] 		{$Y$};
+
+	  \path (X) edge (Z) 
+	  (Z) edge (Y);
+	\end{tikzpicture}
+	
+	(head to tail)
+\end{center}
 
 
 
