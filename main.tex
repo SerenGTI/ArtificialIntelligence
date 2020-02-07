@@ -8,6 +8,8 @@
 \author{Simon König\\Skript und Zusammenfassung zur Vorlesung\\ von Marc \textsc{Toussaint}\\an der Universität Stuttgart}
 \date{Stand \today}
 
+\lfoot{Simon König \today}
+
 \newcommand{\countset}[1]{\simpleset{1,\ldots,#1}}
 \newcommand{\E}{\ensuremath{\operatorname{E}}}
 \newcommand{\independent}{\ensuremath{\operatorname{Indep}}}
@@ -198,7 +200,12 @@ Der Spieler möchte den Reward maximieren, während das Ziel des Gegners ist, de
 
 Bei einer Entscheidung des Spielers wird also der Pfad gewählt, der maximalen Gewinn verspricht. Simulieren wir nun Züge des Gegners, gehen wir von optimalem Handeln aus und lassen den Gegner den Reward minimieren. 
 
-MAX- MIN- Runden
+\begin{equation*}
+	\underset a\argmax \mathrm{MinValue}()
+\end{equation*}
+
+
+
 
 
 
@@ -364,7 +371,7 @@ Genauso kann man auch die Matrixinversion
 berechen.
 
 \subsection{Q-Funktion}
-Die Q-Funktion ist die sogenannte State Action Value function. Sie gibt den Wert eines Zustands, gegeben der ersten ausgeführten Aktion an.
+Die Q-Funktion beziehungsweise \emph{State Action Value Function} gibt den Wert eines Zustands, gegeben der ersten ausgeführten Aktion an.
 \begin{equation*}
 	Q^\pi(s,a)=\E\set{r_0+\gamma r_1+\gamma^2 r_2+\ldots}{s_0=s,a_0=0;\pi}
 \end{equation*}
@@ -372,10 +379,14 @@ Dies können wir analog zur Valuefunktion wieder rekursiv schreiben als
 \begin{align*}
 	Q^\pi(s,a)=R(s,a)+\gamma\sum_{s'}P(s'|s,a)Q^\pi(s',\pi(s')).
 \end{align*}
-Der Zusammenhang zur Valuefunktion ist offensichtlich
+Der Zusammenhang zur Valuefunktion ist
 \begin{equation*}
-	V^\pi(s)=Q^\pi(s,\pi(s)).
+	V^\pi(s)=Q^\pi(s,\pi(s))
 \end{equation*}
+beziehungsweise für die Valuefunktion bei optimalem Verhalten
+\begin{align*}
+	V^\ast(s)&=\max_aQ^\ast(s,a).
+\end{align*}
 
 \subsubsection{Q-Iteration}
 Die Q-Iteration lässt sich vollkommen analog zur Value-Iteration schreiben. Es gilt 
@@ -406,20 +417,20 @@ Dieses Verfahren heißt \emph{Policy Iteration}.
 
 
 
+% \subsection{Belief State und Belief MDP}
+% 05/24ff
+% Kommen wir noch einmal zurück zum Banditenproblem, bisher haben wir Wissen dargestellt als die gesamte Historie der Entscheidungen und damit verbundenen Rewards
+% \begin{equation*}
+% 	h_t=[(a_1,y_1),(a_2,y_2),\ldots,(a_{t-1},y_{t-1})].
+% \end{equation*}
+
+% Aber dieses Wissen lässt sich noch auf eine andere Art und Weise darstellen. Der \emph{Belief} ist
+% \begin{equation*}
+% 	b_t(\theta)=P(\theta|h_t)
+% \end{equation*}
+% wobei $\theta=(\theta_1,\ldots,\theta_n)$ die unbekannten Parameter der Banditen sind.
 
 
-
-
-\begin{align*}
-	V^\ast(s)&=\max_aQ^\ast(s,a)\\
-	&=\max_a\left[R(s,a)+\gamma\sum_{s'}P(S'\,|\, s,a)V^\ast(s')\right]
-\end{align*}
-
-
-
-\begin{itemize}
-	\item Q-Iteration und Q-Funktion 05/14ff
-\end{itemize}
 
 
 
@@ -548,18 +559,55 @@ Desweiteren wird der Algorithmus in sogenannten Episoden ausgeführt, nach denen
 \subsubsection{Varianten des Q-Learning}
 Es gibt viele Varianten des Basis-Q-Learning. Sie
 \paragraph{Eligibility Traces}
-06/16ff
+Bisher sind die Lernverfahren sehr langsam, da ein erzielter Reward immer nur einen Schritt \enqo{in die Vergangenheit} weitergereicht wird.
+Aber alle Zustände entlang eines Pfads, der zu einem Erfolg führt, sollten aktualisiert werden. Erhält einen Reward, ist nicht nur die letzte getroffene Entscheidung die entscheidende Aktion, sondern der gesamte gegangene Pfad ist wichtig.
+\emph{Eligibility Traces} bewerten (mit Discounting und Skalierungsfaktor) den gesamten Pfad so wird aus der gesamten Vergangenheit bis zum Reward gelernt. Die $Q$-Tabelle wird viel schneller gefüllt und damit schneller gelernt.
 
 
-06/15ff
+
 \begin{itemize}
-	\item Eligibility Traces
 	\item Experience Replay
 \end{itemize}
 \paragraph{TD}
-\paragraph{SARSA}
-\paragraph{$Q(\lambda)$}
+Der \emph{Temporal Difference}-Lernalgorithmus lernt aus der Erfahrung $(s,r,s')$, indem die Valuefunktion im Zustand $s$ durch
+\begin{equation*}
+	V(s)\leftarrow V(s)+\alpha [r+\gamma V_{\text{old}}(s')-V_{\text{old}}(s)]
+\end{equation*}
+aktualisiert wird.
 
+Mit Verwendung von einer längeren Historie kann man ganze Erfahrungssequenzen mit einbeziehen, zum Beispiel $(s_0,r_0,r_1,r_2,s_3)$ und damit
+\begin{equation*}
+	V(s_0)\leftarrow V(s_0)+\alpha [r_0+\gamma r_1+\gamma^2r_2+\gamma^3 V_{\text{old}}(s_3)-V_{\text{old}}(s_0)]
+\end{equation*}
+berechnen. Dies nennt man dann \emph{Temporal Credit Assignment}.
+
+Bei den beiden Verfahren wurde bisher immer nur ein Zustand aktualisiert, wir betrachten nun den $\mathrm{TD}(\lambda)$-Algorithmus, der Eligibility auf elegante Art und Weise unterbringt und damit mit einer Erfahrungssequenz mehrere Zustände aktualisieren kann.
+
+Die Eligibility-Funktion wird immer beim Besuchen des Zustands $s_t$ aktualisiert
+\begin{equation*}
+	e(s_t)\leftarrow e(s_t)+1.
+\end{equation*}
+Die Funktion \enqo{merkt sich}, dass der Zustand vor kurzem besucht wurde. Unter Verwendung dieser Funktion wird dann die Valuefunktion aktualisiert
+\begin{equation*}
+	\forall s:V_{\text{new}}(s)= V_{\text{old}}(s)+\alpha e(s)*[r_t+\gamma V_{\text{old}}(s_{t+1})-V_{\text{old}}(s_t)].
+\end{equation*}
+Wichtig ist hierbei, dass alle Zustände aktualisiert werden.
+Zustände die nicht oder lange nicht mehr besucht wurden haben dabei einen kleinen Eligibility-Wert, da man in jedem Schritt das Discounting
+\begin{equation*}
+	\forall s:e(s)\leftrightarrow \gamma\lambda e(s)
+\end{equation*}
+anwendet.
+
+\paragraph{SARSA}
+SARSA verwendet die Erfahrung $(s,a,r,s',a')$ (daher auch der Name) um $Q^\pi$-Funktion zu schätzen.
+\begin{equation*}
+	\forall s:Q(s,a)\leftarrow Q(s,a)+\alpha e(s,a)[r+\gamma Q_{\text{old}}(s',a')-Q_{\text{old}}(s,a)]
+\end{equation*}
+
+\paragraph{$Q(\lambda)$}
+\begin{equation*}
+	\forall s:Q(s,a)\leftarrow Q(s,a)+\alpha e(s,a)[r+\gamma \max_{a'} Q_{\text{old}}(s',a')-Q_{\text{old}}(s,a)]
+\end{equation*}
 
 
 
@@ -704,15 +752,13 @@ Sind bei einer Variablenbelegung mehrere Werte möglich wählt man mit der \emph
 \subsection{Inferenz}
 Mit den bisher besprochenen Optimierungen ist nicht alles abgedeckt. Durch Anwenden von Inferenz können wir frühzeitig feststellen ob eine Lösung überhaupt noch möglich ist, was natürlich bedeutet dass wir das Backtracking früher beginnen können.
 \subsubsection{Constraint Propagation}
+Nach jeder Wertezuweisung können die möglichen Belegungen der übrigen Variablen berechnet werden. Das heißt nach jeder Zuweisung werden aus den Domains $D_i$ entsprechend den Constraints alle nicht mehr möglichen Werte entfernt. Dies kann rekursiv geschehen, da das Löschen eines Werts wiederum die Domains beeinflussen kann.
+Diese Denkweise ist \emph{Inferenz}. Das angewandte Verfahren heißt \emph{Constraint Propagation}, da wir implizite Constraints propagieren und so die Domains verkleinern.
 
+Für binäre Constraints wird Constraint Propagation auch \emph{Arc Consistency} genannt.
 
-
-
-
-
-
+Betrachten wir ein kleines Beispiel. Die nachfolgenden Variablen haben alle den gleichen Domainraum $D=\simpleset{\text{\color{red}rot},\text{\color{blue}blau},\text{\color{green}grün}}$. Alle Constraints fordern, wie im Constraintgraph eingetragen, Ungleichheit der Variablen. Es handelt sich hier also um ein Färbungsproblem. Die Domains wurden in die Nähe der Variablen eingetragen.
 \noindent
-\vspace{1em}
 \begin{center}
 	\begin{tikzpicture}[auto,node distance=2.5cm,semithick, baseline=1em]
 	  \tikzstyle{every state}=[fill=white,circle,draw=black,text=black,align=center]
@@ -721,31 +767,38 @@ Mit den bisher besprochenen Optimierungen ist nicht alles abgedeckt. Durch Anwen
 	  \node[state] (N) {N};
 	  \node[state] (W) [below left=0.7cm and 1.2cm of N] {W};
 	  \node[state] (S) [below of=N] {S};
-	  \node[state] (T) [right of=N] {T};
-	  %\node[state] (E) [right of=S] {E};
-	  %\node[state] (A) [below  right=1.2cm and 0.7cm of S] {A};
+	  \node[state] (T) [below right=0.7cm and 1.2cm of N] {T};
 
 	  \path 
 	  (N) edge node[constraint, label={above left:$W\neq N$},below=-3pt]{} (W)
-	  edge node[constraint, label={above:$N\neq T$}] {} (T)
+	  edge node[constraint, label={above right:$N\neq T$}] {} (T)
 	  
-	  %(T) edge node[constraint, label={right:$T\neq E$}] {} (E)
 
 	  (S) edge node[constraint, label={below right:$S\neq T$}] {} (T)
-	  %edge node[constraint, label={above:$S\neq E$}] {} (E)
 	  edge node[constraint, label={left:$N\neq S$}]{} (N)
 	  edge node[constraint, label={below left:$W\neq S$}]{} (W)
-	  
-	  %(A) edge node[constraint, label={right:$A\neq E$}] {} (E)
-	  %edge node[constraint, label={left:$S\neq E$}] {} (S)
 	  ;
+
+	  \node[constraint] [fill=red,above left=0.1cm and 0.1cm of N] {};
+	  \node[constraint] [fill=green,above=0.1cm of N] {};
+	  \node[constraint] [fill=blue,above right=0.1cm and 0.1cm of N] {};
+
+	  \node[constraint] [fill=red,above left=0.1cm and 0.1cm of W] {};
+	  \node[constraint] [fill=green,left=0.1cm of W] {};
+	  \node[constraint] [fill=blue,below left=0.1cm and 0.1cm of W] {};
+
+	  \node[constraint] [fill=red,below left=0.1cm and 0.1cm of S] {};
+	  \node[constraint] [fill=green,below=0.1cm of S] {};
+	  \node[constraint] [fill=blue,below right=0.1cm and 0.1cm of S] {};
+
+	  \node[constraint] [fill=red,above right=0.1cm and 0.1cm of T] {};
+	  \node[constraint] [fill=green,right=0.1cm of T] {};
+	  \node[constraint] [fill=blue,below right=0.1cm and 0.1cm of T] {};
 	\end{tikzpicture}
 \end{center}
 \noindent
-
-
+Färben wir zu erst $W$ rot, sehen wir dass sich die Domains anpassen.
 \noindent
-\vspace{1em}
 \begin{center}
 	\begin{tikzpicture}[auto,node distance=2.5cm,semithick, baseline=1em]
 	  \tikzstyle{every state}=[fill=white,circle,draw=black,text=black,align=center]
@@ -754,28 +807,60 @@ Mit den bisher besprochenen Optimierungen ist nicht alles abgedeckt. Durch Anwen
 	  \node[state] (N) {N};
 	  \node[state] (W) [draw=red,below left=0.7cm and 1.2cm of N] {W};
 	  \node[state] (S) [below of=N] {S};
-	  \node[state] (T) [draw=green,right of=N] {T};
-	  %\node[state] (E) [right of=S] {E};
-	  %\node[state] (A) [below  right=1.2cm and 0.7cm of S] {A};
+	  \node[state] (T) [below right=0.7cm and 1.2cm of N] {T};
 
 	  \path 
 	  (N) edge node[constraint, label={above left:$W\neq N$},below=-3pt]{} (W)
-	  edge node[constraint, label={above:$N\neq T$}] {} (T)
-	  
-	  %(T) edge node[constraint, label={right:$T\neq E$}] {} (E)
+	  edge node[constraint, label={above right:$N\neq T$}] {} (T)
 
-	  (S) edge node[constraint, label={above left:$S\neq T$}] {} (T)
-	  %edge node[constraint, label={above:$S\neq E$}] {} (E)
+	  (S) edge node[constraint, label={below right:$S\neq T$}] {} (T)
 	  edge node[constraint, label={left:$N\neq S$}]{} (N)
 	  edge node[constraint, label={below left:$W\neq S$}]{} (W)
-	  
-	  %(A) edge node[constraint, label={right:$A\neq E$}] {} (E)
-	  %edge node[constraint, label={left:$S\neq E$}] {} (S)
 	  ;
+
+	  \node[constraint] [fill=green,above left=0.1cm and 0.01cm of N] {};
+	  \node[constraint] [fill=blue,above right=0.1cm and 0.01cm of N] {};
+
+	  \node[constraint] [fill=green,below left=0.1cm and 0.01cm of S] {};
+	  \node[constraint] [fill=blue,below right=0.1cm and 0.01cm of S] {};
+
+	  \node[constraint] [fill=red,above right=0.1cm and 0.1cm of T] {};
+	  \node[constraint] [fill=green,right=0.1cm of T] {};
+	  \node[constraint] [fill=blue,below right=0.1cm and 0.1cm of T] {};
+	\end{tikzpicture}
+\end{center}
+\noindent
+Legen wir nun noch $T$ auf grün fest.
+\noindent
+\begin{center}
+	\begin{tikzpicture}[auto,node distance=2.5cm,semithick, baseline=1em]
+	  \tikzstyle{every state}=[fill=white,circle,draw=black,text=black,align=center]
+	  \tikzstyle{constraint}=[rectangle, fill=black, below=-3pt]
+
+	  \node[state] (N) {N};
+	  \node[state] (W) [draw=red,below left=0.7cm and 1.2cm of N] {W};
+	  \node[state] (S) [below of=N] {S};
+	  \node[state] (T) [draw=green,below right=0.7cm and 1.2cm of N] {T};
+
+	  \path 
+	  (N) edge node[constraint, label={above left:$W\neq N$},below=-3pt]{} (W)
+	  edge node[constraint, label={above right:$N\neq T$}] {} (T)
+
+	  (S) edge node[constraint, label={below right:$S\neq T$}] {} (T)
+	  edge node[constraint, label={left:$N\neq S$}]{} (N)
+	  edge node[constraint, label={below left:$W\neq S$}]{} (W)
+	  ;
+
+	  \node[constraint] [fill=blue,above=0.1cm of N] {};
+
+	  \node[constraint] [fill=blue,below=0.1cm of S] {};
 	\end{tikzpicture}
 \end{center}
 \noindent
 Man würde hier bereits nach zwei Schritten sehen, dass für $N$ und $S$ jeweils nur noch ein Wert möglich ist $D_N=D_S=\simpleset{{\color{blue}\text{blau}}}$. Aber die beiden Variablen dürfen wegen dem $N\neq S$ Constraint nicht mit dem selben Wert belegt werden.
+
+Man kann Konsistenz nach \emph{arc consistency} formalisieren, als ein Constraint $X\rightarrow Y$ heißt konsistent, wenn für jeden Wert $x$ von $X$ ein erlaubter Wert $y$ existiert.
+
 
 
 
@@ -788,91 +873,132 @@ Man würde hier bereits nach zwei Schritten sehen, dass für $N$ und $S$ jeweils
 
 
 
-\section{Graphische Modelle von probabilistischen Problemen}
-Streng genommen haben
+\section{Graphische Modelle von probabilistischen Systemen}
 
-Unabhängigkeit
+
+
+
+
+
+
+
+
+
+
+Unabhängigkeit von Zufallsvariablen sollte klar sein, wir haben wir diese Eigenschaft streng genommen sogar bereits benutzt, der Vollständigkeit halber definieren wir sie hier noch einmal.
+\begin{definition}[Unabhängigkeit]
+	Zwei Zufallsvariablen $X,Y$ heißen \emph{unabhängig}, wenn
+	\begin{equation*}
+		\independent(X,Y)\Longleftrightarrow P(X,Y)=P(X)*P(Y)
+	\end{equation*}
+	gilt. Analog sind sie \emph{konditional unabhängig}, wenn
+	\begin{equation*}
+		\independent(X,Y|Z)\Longleftrightarrow P(X,Y|Z)=P(X|Z)*P(Y|Z).
+	\end{equation*}
+\end{definition}
+
+
+\subsection{Bayesnetze}
+09/*ff
+
+
+
+\begin{definition}[Bayesnetz]
+	Ein \emph{Bayesnetz} ist ein gerichteter azyklischer Graph, bei dem jeder Knoten eine Zufallsvariable repräsentiert. Für jeden Knoten $X_i$ gibt es eine konditionale Wahrscheinlichkeitsverteilung für dessen Wert
+	\begin{equation*}
+		P(X_i\,|\,\mathrm{Parents}(X_i)).
+	\end{equation*}
+	Üblicherweise stellt man beobachtete Variablen d.h. Variablen, deren Werte bekannt sind, mit grauer Schattierung dar.
+\end{definition}
+Die gemeinsame Verteilung kann man durch
 \begin{equation*}
-	\independent(X,Y)\Longleftrightarrow P(X,Y)=P(X)*P(Y)
+	P(X_{1:n})=\prod_{i=1}^nP(X_i\,|\,\mathrm{Parents}(X_i))
 \end{equation*}
-Konditionale Unabhängigkeit
-\begin{equation*}
-	\independent(X,Y|Z)\Longleftrightarrow P(X,Y|Z)=P(X|Z)*P(Y|Z)
-\end{equation*}
+faktorisieren. Wobei $\mathrm{Parents}(X_i)$ die Vorgänger von $X_i$ sind, d.h. ein Knoten $v\in\mathrm{Parents}(X_i)$ genau dann, wenn eine Kante $(v,X_i)$ im Bayesnetz existiert.
+
+Um Unabhängigkeit von Variablen in Bayesnetzen zu entscheiden gibt es grundsätzlich drei Fälle, die eine Hilfe sein können.
+\begin{enumerate}
+	\item Head to Head:
+	\begin{center}
+		\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=1.5cm,
+	                    semithick, baseline=1em]
+		  \tikzstyle{every state}=[fill=white,draw=black,text=black,text width=0.5cm, align=center]
+
+		  \node[state] 		   (X)                    	{$X$};
+		  \node[state]         (Z) [below right of=X] 		{$Z$};
+		  \node[state]         (Y) [above right of=Z] 		{$Y$};
+
+		  \path (X) edge (Z)
+		  (Y) edge (Z);
+		\end{tikzpicture}
+	\end{center}
+	Es gilt $\independent(X,Y)$ und $\neg\independent(X,Y|Z)$, denn
+	\begin{align*}
+		P(X,Y,Z)&=P(X)P(Y)P(Z|X,Y)\\
+		P(X,Y)&=P(X)P(Y)\sum_ZP(Z|X,Y)\\
+		&=P(X)P(Y).
+	\end{align*}
+
+\item Tail to Tail:
+	\begin{center}
+		\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=1.5cm,
+	                    semithick, baseline=1em]
+		  \tikzstyle{every state}=[fill=white,draw=black,text=black,text width=0.5cm, align=center]
+
+		  \node[state] 		   (X)                    	{$X$};
+		  \node[state]         (Z) [above right of=X] 		{$Z$};
+		  \node[state]         (Y) [below right of=Z] 		{$Y$};
+
+		  \path (Z) edge (X) edge (Y);
+		\end{tikzpicture}
+	\end{center}
+	Es gilt $\neg\independent(X,Y)$ und $\independent(X,Y|Z)$, denn
+	\begin{align*}
+		P(X,Y,Z)&=P(Z)P(X|Z)P(Y|Z)\\
+		P(X,Y|Z)&=\frac{P(X,Y,Z)}{P(Z)}\\
+		&=P(X|Z)P(Y|Z).
+	\end{align*}
+
+\item Head to Tail:
+	\begin{center}
+		\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=1.5cm,
+	                    semithick, baseline=1em]
+		  \tikzstyle{every state}=[fill=white,draw=black,text=black,text width=0.5cm, align=center]
+
+		  \node[state] 		   (X)                    	{$X$};
+		  \node[state]         (Z) [above right of=X] 		{$Z$};
+		  \node[state]         (Y) [below right of=Z] 		{$Y$};
+
+		  \path (X) edge (Z) 
+		  (Z) edge (Y);
+		\end{tikzpicture}
+	\end{center}
+	Es gilt $\neg\independent(X,Y)$ und $\independent(X,Y|Z)$, denn
+	\begin{align*}
+		P(X,Y,Z)&=P(X)P(Z|X)P(Y|Z)\\
+		P(X,Y|Z)&=\frac{P(X,Y,Z)}{P(Z)}=\frac{P(X,Z)P(Y|Z)}{P(Z)}\\
+		&=P(X|Z)P(Y|Z).
+	\end{align*}
+
+\end{enumerate}
 
 
 
+\subsection{Inferenz in graphischen Modellen}
+In Bayesnetzen können wir genauso Inferenz betreiben und aus Informationen der beobachteten Variablen oder a priori-Informationen Aussagen über andere Variablen treffen.
 
-
-\vspace{1em}
-\noindent
-\begin{center}
-	\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=1.5cm,
-                    semithick, baseline=1em]
-	  \tikzstyle{every state}=[fill=white,draw=black,text=black,text width=0.5cm, align=center]
-
-	  \node[state] 		   (X)                    	{$X$};
-	  \node[state]         (Z) [below right of=X] 		{$Z$};
-	  \node[state]         (Y) [above right of=Z] 		{$Y$};
-
-	  \path (X) edge (Z)
-	  (Y) edge (Z);
-	\end{tikzpicture}
-
-	(head to head)
-\end{center}
-
-\begin{center}
-	\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=1.5cm,
-                    semithick, baseline=1em]
-	  \tikzstyle{every state}=[fill=white,draw=black,text=black,text width=0.5cm, align=center]
-
-	  \node[state] 		   (X)                    	{$X$};
-	  \node[state]         (Z) [above right of=X] 		{$Z$};
-	  \node[state]         (Y) [below right of=Z] 		{$Y$};
-
-	  \path (Z) edge (X) edge (Y);
-	\end{tikzpicture}
-	
-	(tail to tail)
-\end{center}
-
-\begin{center}
-	\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=1.5cm,
-                    semithick, baseline=1em]
-	  \tikzstyle{every state}=[fill=white,draw=black,text=black,text width=0.5cm, align=center]
-
-	  \node[state] 		   (X)                    	{$X$};
-	  \node[state]         (Z) [above right of=X] 		{$Z$};
-	  \node[state]         (Y) [below right of=Z] 		{$Y$};
-
-	  \path (X) edge (Z) 
-	  (Z) edge (Y);
-	\end{tikzpicture}
-	
-	(head to tail)
-\end{center}
-
-
-
-
-
-
-\begin{itemize}
-	\item Bayesnetze
-	\item Konditionale Unabhängigkeit
-	\item 
-\end{itemize}
-
-\section{Inferenz in graphischen Modellen}
-\begin{itemize}
+\subsubsection{Variablenelimination}
+\begin{enumerate}
 	\item Variablenelimination
 	\item Faktorgraphen
 	\item Message Passing
 	\item Loopy belief propagation
 	\item Sampling Methods?
-\end{itemize}
+\end{enumerate}
 
+\subsection{Decision Making}
+\subsection{Learning}
+\subsection{Structure Learning}
 
 \section{Dynamische Modelle}
 \subsection{Markovprozesse und -ketten}
