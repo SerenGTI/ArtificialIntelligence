@@ -1,0 +1,214 @@
+%!TEX root = ./main.tex
+\section{Markov-Entscheidungsprozesse (MDP)}
+Bisher haben wir nur deterministische Prozesse betrachtet, doch es gibt natürlich viele Anwendungsfälle in denen diese simple Betrachtungsweise nicht ausreicht.
+Ein Markov-Entscheidungsprozess ist eine stochastische Formalisierung des Banditenproblems. Wir betrachten einen Agenten, der sich in einer Welt befindet. Das gesamte System befindet sich in einem Zustand $s$, der Agent kann Aktionen $a$ ausführen, die einen Zustandsübergang hevorrufen, er stellt also die Abbildung
+\begin{equation*}
+	(s_{0:t},a_{0:t},r_{0:t})\mapsto a_{t+1}
+\end{equation*}
+dar.
+Der Agent erhält bei jeder ausgeführten Aktion einen Reward $r$.
+
+\vspace{1em}
+\noindent
+\begin{center}
+	\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=1.5cm,
+                    semithick, baseline=1em]
+	  \tikzstyle{every state}=[fill=white,draw=black,text=black]
+
+	  \node[state] 		   (S0)                    	{$s_0$};
+	  \node[state]         (S1) [right=1.7cm of S0] 		{$s_1$};
+	  \node[state]         (S2) [right=1.7cm of S1] 		{$s_2$};
+
+	  \node[state]         (A0) [above of=S0] 		{$a_0$};
+	  \node[state]         (A1) [above of=S1]       {$a_1$};
+	  \node[state]         (A2) [above of=S2]       {$a_2$};
+
+	  \node[state]         (R0) [below right=0.5cm and 0.2cm of S0]	{$r_0$};
+	  \node[state]         (R1) [below right=0.5cm and 0.2cm of S1]	{$r_1$};
+	  \node[state]         (R2) [below right=0.5cm and 0.2cm of S2]	{$r_2$};
+
+	  \node[]			(S3) [right of=S2] {};
+
+	  \path (S0) edge (A0) edge (S1) edge (R0)
+	  		(S1) edge (A1) edge (S2) edge (R1)
+	  		(S2) edge (A2) edge[-] (S3) edge (R2)
+	        (A0) edge[bend left=10] (R0) edge (S1)
+	        (A1) edge[bend left=10] (R1) edge (S2)
+	        (A2) edge[bend left=10] (R2)
+	        (A2) edge[-] (S3);
+	\end{tikzpicture}
+\end{center}
+\vspace{1em}
+
+\noindent Da das gesamte System stochastischer Natur ist, lässt es sich mittels Wahrscheinlichkeitsverteilungen beschreiben. Es ist definiert durch
+\begin{gather*}
+	P(s_{0:T+1},a_{0:T},r_{0:T}; \pi)=\\P(s_0)\prod_{t=0}^TP(a_t|s_t;\pi)P(r_t|s_t,a_t)P(s_{t+1}|s_t,a_t).
+\end{gather*}
+Mit der initialen Zustandsverteilung $P(s_0)$, den Übergangsverteilungen $P(s_{t+1}|s_t,a_t)$, Verteilungen für den Reward $P(r_t|s_t,a_t)$ sowie der Policy des Agenten 
+\begin{align*}
+	\pi(a_t|s_t)&=P(a_0|s_0;\pi) &&\text{im stochastischen Fall, bzw.}\\
+	a_t&=\pi(s_t)&&\text{deterministisch.}
+\end{align*}%
+In einem diskreten MDP können die Übergangswahrscheinlichkeiten $P(t_{t+1}|s_t,a_t)$ einfach als Tabelle gesehen werden.
+
+Grundsätzlich wird angenommen, dass die Übergangs- und Rewardverteilungen unabgängig von der der Zeit sind und lediglich von Zustand und der getroffenen Aktion abhängen, diese Eigenschaft nennt man auch \emph{stationär}. 
+Damit können wir die \emph{Rewardfunktion} sinnvoll definieren als
+\begin{equation}\label{rewardfunction}
+	R(s,a)\coloneqq\E\set{r}{s,a}=\int rP(r|s,a)\intd r.
+\end{equation}
+
+\paragraph{Zustandsbegriff in einem MDP}
+Außerdem wichtig ist zu klären, was \enqo{Zustand} in einem MDP bedeutet. Wir definieren, dass für einen gegebenen Zustand die Vergangenheit konditional unabhängig von der Zukunft ist. Das heißt, alle möglichen \enqo{Zukünfte} $s_{t^+}$ für $t^+>t$ sind im Zustand $s_t$ kodiert. Oder allgemein
+\begin{equation*}
+	\forall t^+>t,t^-<t:\enspace\independent(s_{t^+},s_{t^-}|s_t).	
+\end{equation*} 
+
+\paragraph{Optimalität einer Policy}
+Der \emph{Wert (Value)} eines Zustands $s$ beschreibt den erwarteten (discounted) reward bei einer Policy $\pi$, wenn in Zustand $s$ begonnen wird, das heißt
+\begin{equation*}
+ 	V^\pi(s)\coloneqq\E\set{r_0+\gamma r_1+\gamma^2r_2+\ldots}{s_0=s;\pi}
+ \end{equation*} 
+mit Discounting-Faktor $\gamma\in[0,1]$. Das Discounting wird angewandt um Belohnungen in ferner Zukunft nur sehr klein zu bewerten.
+
+Eine Policy $\pi^\ast$ ist optimal, wenn
+\begin{equation*}
+	\forall s:\enspace V^{\pi^\ast}(s)=V^\ast(s)\coloneqq\underset\pi\max\, V^\pi(s),
+\end{equation*}
+also gleichzeitig alle Values der möglichen Zustände maximiert werden.
+In MDPs existiert immer mindestens eine optimale deterministische Policy.
+
+\subsection{Valuefunktion}
+Wir wollen noch einmal zurück zur Value-Funktion $V$ gehen und deren Eigenschaften betrachten. Sie ist ein zentrales Konzept in der gesamten Theorie des Reinforcement Lernens, denn viele Algorithmen lassen sich direkt aus ihr ableiten. Betrachten wir zunächst nur den Fall einer deterministischen Policy $\pi$, dann können wir die Valuefunktion rekursiv darstellen. Wir beginnen dazu mit der Definition
+\begin{equation*}
+	V^\pi(s)=\E\set{r_0+\gamma r_1+\gamma^2r_2+\ldots}{s_0=s;\pi}.
+\end{equation*}
+Den ersten Zustandsübergang und den damit einhergehenden Reward kann man nun herausziehen und erhält mit der Rewardfunktion aus \autoref{rewardfunction} dann
+\begin{align*}
+	V^\pi(s)&=\E\set{r_0}{s_0=s;\pi}\\
+	&\quad+\gamma\E\set{r_1+\gamma r_2+\ldots}{s_0=s;\pi}\\
+	&=R(s,\pi(s))\\
+	&\quad+\gamma\sum_{s'}P(s'|s,\pi(s))\E\set{r_1+\ldots}{s_1=s';\pi}.
+\end{align*}
+Setzt man hier nun die Definition der Valuefunktion ein, erhält man die rekursive Darstellung
+\begin{equation*}
+	V^\pi(s)=R(s,\pi(s))+\gamma\sum_{s'}P(s'|s,\pi(s))V^\pi(s').
+\end{equation*}
+Der zweite Teil beschreibt den Wert/Value aller möglichen Folgezustände gewichtet mit den Wahrscheinlichkeiten der Übergänge.
+
+
+Dies lässt sich genauso in Vektorschreibweise darstellen als
+\begin{equation*}
+	\mathbf V^\pi = \mathbf R^\pi+\gamma \mathbf P^\pi \mathbf V^\pi
+\end{equation*}
+mit den Vektoren $\mathbf V_s^\pi=V^\pi(s), \mathbf R_s^\pi=R(s,\pi(s))$ und der Wahrscheinlichkeitsmatrix $\mathbf P_{s,s'}^\pi=P(s'|s,\pi(s))$.
+
+% \paragraph{Valuefunktion für stochastische Policies}
+% Die rekursive Darstellung von $V$ für ein stochastisches $\pi(a|s)$ ist grundsätzlich analog
+% \begin{equation*}
+% 	V^\pi(s)=\sum_a\pi(a|s)R(s,a)+\gamma\sum_{s',a}\pi(a|s)P(s'|s,a)V^\pi(s').
+% \end{equation*}
+
+\subsubsection{Value Iteration}
+Wir möchten nun einen ersten Ansatz finden, optimale Policies zu berechnen.
+Wir verwenden dafür das Optimalitätsprinzip von Bellman, aus dem sich ergibt
+\begin{equation*}
+	V^\ast(s)=\max_a\bigg[R(s,a)+\gamma\sum_{s'}P(s'|s,a)V^\ast(s')\bigg].
+\end{equation*}
+Die zugehörige optimale Policy wählt immer die Aktion mit größtem erwarteten Reward, das heißt
+\begin{equation*}
+	\pi^\ast(s)=\underset a\argmax \bigg[R(s,a)+\gamma\sum_{s'}P(s'|s,a)V^\ast(s')\bigg].
+\end{equation*}
+Mit diesem Wissen lässt sich $V^\ast$ sinnvoll berechnen, das nachfolgende Verfahren ist die \emph{Value Iteration}.
+Wir initialisieren $V_{k=0}(s)=0$. Dann berechnen wir für alle Zustände $s$ den Iterationsschritt
+\begin{equation*}
+	V_{k+1}(s)=\max_a\bigg[R(s,a)+\gamma\sum_{s'}P(s'|s,a)V_k(s')\bigg],
+\end{equation*} 
+bis das Abbruchkriterium
+\begin{equation*}
+	\max_s|V_{k+1}(s)<V_k(s)|\leq \epsilon
+\end{equation*}
+erreicht wird.
+Die Valueiteration konvergiert gegen $V^\ast$.
+
+\paragraph{Policy Evaluation}\label{policyEvaluation}
+Anstatt eine optimale Valuefunktion zu berechnen, ist es natürlich genauso möglich die Valuefunktion $V^\pi$ einer gegebenen Policy $\pi$ zu berechnen. Dies funktioniert analog zur Value-Iteration mit dem Iterationsschritt
+\begin{equation*}
+	V_{k+1}^\pi(s)=R(s,\pi(s))+\gamma\sum_{s'}P(s'|s,\pi(s))V_k^\pi(s').
+\end{equation*}
+Genauso kann man auch die Matrixinversion
+\begin{equation*}
+	\mathbf V^\pi=(\mathbf I-\gamma\mathbf P^\pi)^{-1}\mathbf R^\pi
+\end{equation*}
+berechen.
+
+\subsection{Q-Funktion}
+Die Q-Funktion beziehungsweise \emph{State Action Value Function} gibt den Wert eines Zustands, gegeben der ersten ausgeführten Aktion an.
+\begin{equation*}
+	Q^\pi(s,a)=\E\set{r_0+\gamma r_1+\gamma^2 r_2+\ldots}{s_0=s,a_0=0;\pi}
+\end{equation*}
+Dies können wir analog zur Valuefunktion wieder rekursiv schreiben als
+\begin{align*}
+	Q^\pi(s,a)=R(s,a)+\gamma\sum_{s'}P(s'|s,a)Q^\pi(s',\pi(s')).
+\end{align*}
+Der Zusammenhang zur Valuefunktion ist
+\begin{equation*}
+	V^\pi(s)=Q^\pi(s,\pi(s))
+\end{equation*}
+beziehungsweise für die Valuefunktion bei optimalem Verhalten
+\begin{align*}
+	V^\ast(s)&=\max_aQ^\ast(s,a).
+\end{align*}
+
+\subsubsection{Q-Iteration}
+Die Q-Iteration lässt sich vollkommen analog zur Value-Iteration schreiben. Es gilt 
+\begin{align*}
+	Q^\ast(s,a)=R(s,a)+\gamma\sum_{s'}P(s'\,|\,s,a)\max_{a'}Q^\ast (s',a'),
+\end{align*}
+womit wir wieder einen Algorithmus entwerfen.
+Wir initialisieren $Q_0(s,a)=0$ für alle $s,a$.
+Dann berechnen wir wiederum schrittweise für alle Kombinationen von Zuständen und Aktionen
+\begin{equation*}
+	Q_{k+1}(s,a)=R(s,a)+\gamma\sum_{s'}P(s'|s,a)\max_{a'}Q_{k}(s',a')
+\end{equation*}
+bis das Abbruchkriterium 
+\begin{equation*}
+	\max_{s,a}|Q_{k+1}(s,a)-Q_k(s,a)|\leq \epsilon
+\end{equation*}
+erreicht wird.
+Die Q-Iteration konvergiert gegen $Q^\ast$.
+
+\paragraph{Policy Iteration}
+Man kann natürlich auch ein ähnliches iteratives Verfahren anwenden um die Policy $\pi$ schrittweise zu verbessern.
+Wir initialisieren $\pi_0$ zum Beispiel zufällig.
+Dann berechnen wir zunächst $Q^{\pi_k}$ (analog zu Policy Evaluation in \autoref{policyEvaluation}) und aktualisieren damit die Policy
+\begin{equation*}
+	\pi_{k+1}(s)=\underset a\argmax Q^{\pi_k}(s,a).
+\end{equation*}
+Dieses Verfahren heißt \emph{Policy Iteration}.
+
+
+
+% \subsection{Belief State und Belief MDP}
+% 05/24ff
+% Kommen wir noch einmal zurück zum Banditenproblem, bisher haben wir Wissen dargestellt als die gesamte Historie der Entscheidungen und damit verbundenen Rewards
+% \begin{equation*}
+% 	h_t=[(a_1,y_1),(a_2,y_2),\ldots,(a_{t-1},y_{t-1})].
+% \end{equation*}
+
+% Aber dieses Wissen lässt sich noch auf eine andere Art und Weise darstellen. Der \emph{Belief} ist
+% \begin{equation*}
+% 	b_t(\theta)=P(\theta|h_t)
+% \end{equation*}
+% wobei $\theta=(\theta_1,\ldots,\theta_n)$ die unbekannten Parameter der Banditen sind.
+
+
+
+
+
+
+
+\subsection{Partiell beobachtbare Markov-Entscheidungsprozesse (POMDP)}
+Partiell beobachtbare Markov-Entscheidungsprozesse (partially observable markov decision processes, POMDPs) sind MDPs
+4/22ff
+7/11ff
+

@@ -69,6 +69,9 @@
 \tableofcontents
 
 \section{Einführung}
+
+
+
 \section{Banditen}
 Wir wollen ein System analog zu einarmigen Banditen modellieren durch sogenannte \glqq Banditen\grqq. Wir sagen, es gibt $n$ mögliche Banditen zwischen denen man wählen kann, die zu treffende Entscheidung ist also einer der Banditen.
 
@@ -76,15 +79,16 @@ Jeder Bandit gibt einen Gewinn (\emph{reward}), der proportional zur Gewinnwahrs
 
 Dieses Entscheidungsmodell ist ein Archetyp für die verschiedensten Problemstellungen.
 
-\begin{definition}\label{Banditenproblem}
+\begin{definition}[Banditenproblem]\label{Banditenproblem}
+	Das \emph{Banditenproblem} besteht aus $n$ Banditen mit jeweils unbekannten Parametern $\theta_i$, die den Gewinn $y$ beeinflussen.
 	Sei $a_t\in\countset n$ die Entscheidung für einen Banditen zum Zeitpunkt $t$. Das zugehörige Ergebnis ist $y_t\in\R$. 
 
-	Eine Strategie \emph{policy} verwendet das Wissen über alle bisher getroffenen Entscheidungen um einen nächsten Banditen auszuwählen
+	Eine Strategie (\emph{policy}) verwendet das Wissen über alle bisher getroffenen Entscheidungen um einen nächsten Banditen auszuwählen
 	\begin{equation*}
 		\pi:[(a_1,y_1),(a_2,y_2),\ldots,(a_{t-1},y_{t-1})]\mapsto a_t.
 	\end{equation*}
 \end{definition}
-Eine Problemstellung kann nun auf verschiedene Weisen definiert werden, so gibt es zwei grundlegende \emph{Ziel-Typen}. Man kann versuchen während des gesamten Zeitraums einen maximalen Gewinn zu erzielen. Das heißt Ziel ist es, ein $\pi$ zu finden, sodass der Gewinn insgesamt maximiert wird
+Eine Problemstellung kann nun auf verschiedene Weisen definiert werden, so gibt es zwei grundlegende \enqo{Ziel-Typen}. Man kann versuchen während des gesamten Zeitraums einen maximalen Gewinn zu erzielen. Das heißt Ziel ist es, ein $\pi$ zu finden, sodass der Gewinn insgesamt maximiert wird
 \begin{equation}
 	\max\left\langle\sum_{t=1}^Ty_t\right\rangle.\label{policy_exploit}
 \end{equation}
@@ -96,7 +100,7 @@ Auch möglich ist, zu fordern, dass nur die letzte Entscheidung die bestmöglich
 	\max\left\langle y_T\right\rangle,\label{policy_explore}
 \end{equation}
 was bedeutet, dass in den Schritten vor der letzten Entscheidung ohne Rücksicht auf die Rewards einer Entscheidung gelernt werden kann. Man setzt hier also den Fokus darauf zu \emph{explorieren} und alle Möglichkeiten auszuprobieren.
-Man versucht mit der \emph{policy} aus \autoref{policy_explore} möglichst viel Wissen zu sammeln. Es wird auf exploration optimiert und versucht so die Unsicherheit über die Wahrscheinlichkeitsverteilung des Banditen zu minimieren.
+Man versucht mit der \emph{policy} aus \autoref{policy_explore} möglichst viel Wissen zu sammeln. Es wird auf exploration optimiert und versucht so die Unsicherheit über die Wahrscheinlichkeitsverteilung der Banditen zu minimieren.
 
 
 Wissen über das System kann auf zwei Arten und Weisen dargestellt werden. Zum Einen durch den Verlauf der bisherigen Interaktion zwischen Agent und Banditen
@@ -107,7 +111,7 @@ Aber auch eine Darstellung als Wahrscheinlichkeitsverteilung ist möglich. Der s
 \begin{equation*}
 	b_t(\theta)=P(\theta|h_t),
 \end{equation*}
-wobei $\theta=(\theta_1,\ldots,\theta_n)$ der Vektor der unbekannten Gewinnwahrscheinlichkeiten der einzelnden Banditen ist.
+wobei $\theta=(\theta_1,\ldots,\theta_n)$ der Vektor der unbekannten Gewinnwahrscheinlichkeiten der einzelnen Banditen ist.
 
 
 
@@ -228,220 +232,7 @@ Für viele Teilbäume kann schon sehr früh entschieden werden, dass sie keine g
 
 
 
-\section{Markov-Entscheidungsprozesse (MDP)}
-Bisher haben wir nur deterministische Prozesse betrachtet, doch es gibt natürlich viele Anwendungsfälle in denen diese simple Betrachtungsweise nicht ausreicht.
-Ein Markov-Entscheidungsprozess ist eine stochastische Formalisierung des Banditenproblems. Wir betrachten einen Agenten, der sich in einer Welt befindet. Das gesamte System befindet sich in einem Zustand $s$, der Agent kann Aktionen $a$ ausführen, die einen Zustandsübergang hevorrufen, er stellt also die Abbildung
-\begin{equation*}
-	(s_{0:t},a_{0:t},r_{0:t})\mapsto a_{t+1}
-\end{equation*}
-dar.
-Der Agent erhält bei jeder ausgeführten Aktion einen Reward $r$.
-
-\vspace{1em}
-\noindent
-\begin{center}
-	\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=1.5cm,
-                    semithick, baseline=1em]
-	  \tikzstyle{every state}=[fill=white,draw=black,text=black]
-
-	  \node[state] 		   (S0)                    	{$s_0$};
-	  \node[state]         (S1) [right=1.7cm of S0] 		{$s_1$};
-	  \node[state]         (S2) [right=1.7cm of S1] 		{$s_2$};
-
-	  \node[state]         (A0) [above of=S0] 		{$a_0$};
-	  \node[state]         (A1) [above of=S1]       {$a_1$};
-	  \node[state]         (A2) [above of=S2]       {$a_2$};
-
-	  \node[state]         (R0) [below right=0.5cm and 0.2cm of S0]	{$r_0$};
-	  \node[state]         (R1) [below right=0.5cm and 0.2cm of S1]	{$r_1$};
-	  \node[state]         (R2) [below right=0.5cm and 0.2cm of S2]	{$r_2$};
-
-	  \node[]			(S3) [right of=S2] {};
-
-	  \path (S0) edge (A0) edge (S1) edge (R0)
-	  		(S1) edge (A1) edge (S2) edge (R1)
-	  		(S2) edge (A2) edge[-] (S3) edge (R2)
-	        (A0) edge[bend left=10] (R0) edge (S1)
-	        (A1) edge[bend left=10] (R1) edge (S2)
-	        (A2) edge[bend left=10] (R2)
-	        (A2) edge[-] (S3);
-	\end{tikzpicture}
-\end{center}
-\vspace{1em}
-
-\noindent Da das gesamte System stochastischer Natur ist, lässt es sich mittels Wahrscheinlichkeitsverteilungen beschreiben. Es ist definiert durch
-\begin{gather*}
-	P(s_{0:T+1},a_{0:T},r_{0:T}; \pi)=\\P(s_0)\prod_{t=0}^TP(a_t|s_t;\pi)P(r_t|s_t,a_t)P(s_{t+1}|s_t,a_t).
-\end{gather*}
-Mit der initialen Zustandsverteilung $P(s_0)$, den Übergangsverteilungen $P(s_{t+1}|s_t,a_t)$, Verteilungen für den Reward $P(r_t|s_t,a_t)$ sowie der Policy des Agenten 
-\begin{align*}
-	\pi(a_t|s_t)&=P(a_0|s_0;\pi) &&\text{im stochastischen Fall, bzw.}\\
-	a_t&=\pi(s_t)&&\text{deterministisch.}
-\end{align*}%
-In einem diskreten MDP können die Übergangswahrscheinlichkeiten $P(t_{t+1}|s_t,a_t)$ einfach als Tabelle gesehen werden.
-
-Grundsätzlich wird angenommen, dass die Übergangs- und Rewardverteilungen unabgängig von der der Zeit sind und lediglich von Zustand und der getroffenen Aktion abhängen, diese Eigenschaft nennt man auch \emph{stationär}. 
-Damit können wir die \emph{Rewardfunktion} sinnvoll definieren als
-\begin{equation}\label{rewardfunction}
-	R(s,a)\coloneqq\E\set{r}{s,a}=\int rP(r|s,a)\intd r.
-\end{equation}
-
-\paragraph{Zustandsbegriff in einem MDP}
-Außerdem wichtig ist zu klären, was \enqo{Zustand} in einem MDP bedeutet. Wir definieren, dass für einen gegebenen Zustand die Vergangenheit konditional unabhängig von der Zukunft ist. Das heißt, alle möglichen \enqo{Zukünfte} $s_{t^+}$ für $t^+>t$ sind im Zustand $s_t$ kodiert. Oder allgemein
-\begin{equation*}
-	\forall t^+>t,t^-<t:\enspace\independent(s_{t^+},s_{t^-}|s_t).	
-\end{equation*} 
-
-\paragraph{Optimalität einer Policy}
-Der \emph{Wert (Value)} eines Zustands $s$ beschreibt den erwarteten (discounted) reward bei einer Policy $\pi$, wenn in Zustand $s$ begonnen wird, das heißt
-\begin{equation*}
- 	V^\pi(s)\coloneqq\E\set{r_0+\gamma r_1+\gamma^2r_2+\ldots}{s_0=s;\pi}
- \end{equation*} 
-mit Discounting-Faktor $\gamma\in[0,1]$. Das Discounting wird angewandt um Belohnungen in ferner Zukunft nur sehr klein zu bewerten.
-
-Eine Policy $\pi^\ast$ ist optimal, wenn
-\begin{equation*}
-	\forall s:\enspace V^{\pi^\ast}(s)=V^\ast(s)\coloneqq\underset\pi\max\, V^\pi(s),
-\end{equation*}
-also gleichzeitig alle Values der möglichen Zustände maximiert werden.
-In MDPs existiert immer mindestens eine optimale deterministische Policy.
-
-\subsection{Valuefunktion}
-Wir wollen noch einmal zurück zur Value-Funktion $V$ gehen und deren Eigenschaften betrachten. Sie ist ein zentrales Konzept in der gesamten Theorie des Reinforcement Lernens, denn viele Algorithmen lassen sich direkt aus ihr ableiten. Betrachten wir zunächst nur den Fall einer deterministischen Policy $\pi$, dann können wir die Valuefunktion rekursiv darstellen. Wir beginnen dazu mit der Definition
-\begin{equation*}
-	V^\pi(s)=\E\set{r_0+\gamma r_1+\gamma^2r_2+\ldots}{s_0=s;\pi}.
-\end{equation*}
-Den ersten Zustandsübergang und den damit einhergehenden Reward kann man nun herausziehen und erhält mit der Rewardfunktion aus \autoref{rewardfunction} dann
-\begin{align*}
-	V^\pi(s)&=\E\set{r_0}{s_0=s;\pi}\\
-	&\quad+\gamma\E\set{r_1+\gamma r_2+\ldots}{s_0=s;\pi}\\
-	&=R(s,\pi(s))\\
-	&\quad+\gamma\sum_{s'}P(s'|s,\pi(s))\E\set{r_1+\ldots}{s_1=s';\pi}.
-\end{align*}
-Setzt man hier nun die Definition der Valuefunktion ein, erhält man die rekursive Darstellung
-\begin{equation*}
-	V^\pi(s)=R(s,\pi(s))+\gamma\sum_{s'}P(s'|s,\pi(s))V^\pi(s').
-\end{equation*}
-Der zweite Teil beschreibt den Wert/Value aller möglichen Folgezustände gewichtet mit den Wahrscheinlichkeiten der Übergänge.
-
-
-Dies lässt sich genauso in Vektorschreibweise darstellen als
-\begin{equation*}
-	\mathbf V^\pi = \mathbf R^\pi+\gamma \mathbf P^\pi \mathbf V^\pi
-\end{equation*}
-mit den Vektoren $\mathbf V_s^\pi=V^\pi(s), \mathbf R_s^\pi=R(s,\pi(s))$ und der Wahrscheinlichkeitsmatrix $\mathbf P_{s,s'}^\pi=P(s'|s,\pi(s))$.
-
-% \paragraph{Valuefunktion für stochastische Policies}
-% Die rekursive Darstellung von $V$ für ein stochastisches $\pi(a|s)$ ist grundsätzlich analog
-% \begin{equation*}
-% 	V^\pi(s)=\sum_a\pi(a|s)R(s,a)+\gamma\sum_{s',a}\pi(a|s)P(s'|s,a)V^\pi(s').
-% \end{equation*}
-
-\subsubsection{Value Iteration}
-Wir möchten nun einen ersten Ansatz finden, optimale Policies zu berechnen.
-Wir verwenden dafür das Optimalitätsprinzip von Bellman, aus dem sich ergibt
-\begin{equation*}
-	V^\ast(s)=\max_a\bigg[R(s,a)+\gamma\sum_{s'}P(s'|s,a)V^\ast(s')\bigg].
-\end{equation*}
-Die zugehörige optimale Policy wählt immer die Aktion mit größtem erwarteten Reward, das heißt
-\begin{equation*}
-	\pi^\ast(s)=\underset a\argmax \bigg[R(s,a)+\gamma\sum_{s'}P(s'|s,a)V^\ast(s')\bigg].
-\end{equation*}
-Mit diesem Wissen lässt sich $V^\ast$ sinnvoll berechnen, das nachfolgende Verfahren ist die \emph{Value Iteration}.
-Wir initialisieren $V_{k=0}(s)=0$. Dann berechnen wir für alle Zustände $s$ den Iterationsschritt
-\begin{equation*}
-	V_{k+1}(s)=\max_a\bigg[R(s,a)+\gamma\sum_{s'}P(s'|s,a)V_k(s')\bigg],
-\end{equation*} 
-bis das Abbruchkriterium
-\begin{equation*}
-	\max_s|V_{k+1}(s)<V_k(s)|\leq \epsilon
-\end{equation*}
-erreicht wird.
-Die Valueiteration konvergiert gegen $V^\ast$.
-
-\paragraph{Policy Evaluation}\label{policyEvaluation}
-Anstatt eine optimale Valuefunktion zu berechnen, ist es natürlich genauso möglich die Valuefunktion $V^\pi$ einer gegebenen Policy $\pi$ zu berechnen. Dies funktioniert analog zur Value-Iteration mit dem Iterationsschritt
-\begin{equation*}
-	V_{k+1}^\pi(s)=R(s,\pi(s))+\gamma\sum_{s'}P(s'|s,\pi(s))V_k^\pi(s').
-\end{equation*}
-Genauso kann man auch die Matrixinversion
-\begin{equation*}
-	\mathbf V^\pi=(\mathbf I-\gamma\mathbf P^\pi)^{-1}\mathbf R^\pi
-\end{equation*}
-berechen.
-
-\subsection{Q-Funktion}
-Die Q-Funktion beziehungsweise \emph{State Action Value Function} gibt den Wert eines Zustands, gegeben der ersten ausgeführten Aktion an.
-\begin{equation*}
-	Q^\pi(s,a)=\E\set{r_0+\gamma r_1+\gamma^2 r_2+\ldots}{s_0=s,a_0=0;\pi}
-\end{equation*}
-Dies können wir analog zur Valuefunktion wieder rekursiv schreiben als
-\begin{align*}
-	Q^\pi(s,a)=R(s,a)+\gamma\sum_{s'}P(s'|s,a)Q^\pi(s',\pi(s')).
-\end{align*}
-Der Zusammenhang zur Valuefunktion ist
-\begin{equation*}
-	V^\pi(s)=Q^\pi(s,\pi(s))
-\end{equation*}
-beziehungsweise für die Valuefunktion bei optimalem Verhalten
-\begin{align*}
-	V^\ast(s)&=\max_aQ^\ast(s,a).
-\end{align*}
-
-\subsubsection{Q-Iteration}
-Die Q-Iteration lässt sich vollkommen analog zur Value-Iteration schreiben. Es gilt 
-\begin{align*}
-	Q^\ast(s,a)=R(s,a)+\gamma\sum_{s'}P(s'\,|\,s,a)\max_{a'}Q^\ast (s',a'),
-\end{align*}
-womit wir wieder einen Algorithmus entwerfen.
-Wir initialisieren $Q_0(s,a)=0$ für alle $s,a$.
-Dann berechnen wir wiederum schrittweise für alle Kombinationen von Zuständen und Aktionen
-\begin{equation*}
-	Q_{k+1}(s,a)=R(s,a)+\gamma\sum_{s'}P(s'|s,a)\max_{a'}Q_{k}(s',a')
-\end{equation*}
-bis das Abbruchkriterium 
-\begin{equation*}
-	\max_{s,a}|Q_{k+1}(s,a)-Q_k(s,a)|\leq \epsilon
-\end{equation*}
-erreicht wird.
-Die Q-Iteration konvergiert gegen $Q^\ast$.
-
-\paragraph{Policy Iteration}
-Man kann natürlich auch ein ähnliches iteratives Verfahren anwenden um die Policy $\pi$ schrittweise zu verbessern.
-Wir initialisieren $\pi_0$ zum Beispiel zufällig.
-Dann berechnen wir zunächst $Q^{\pi_k}$ (analog zu Policy Evaluation in \autoref{policyEvaluation}) und aktualisieren damit die Policy
-\begin{equation*}
-	\pi_{k+1}(s)=\underset a\argmax Q^{\pi_k}(s,a).
-\end{equation*}
-Dieses Verfahren heißt \emph{Policy Iteration}.
-
-
-
-% \subsection{Belief State und Belief MDP}
-% 05/24ff
-% Kommen wir noch einmal zurück zum Banditenproblem, bisher haben wir Wissen dargestellt als die gesamte Historie der Entscheidungen und damit verbundenen Rewards
-% \begin{equation*}
-% 	h_t=[(a_1,y_1),(a_2,y_2),\ldots,(a_{t-1},y_{t-1})].
-% \end{equation*}
-
-% Aber dieses Wissen lässt sich noch auf eine andere Art und Weise darstellen. Der \emph{Belief} ist
-% \begin{equation*}
-% 	b_t(\theta)=P(\theta|h_t)
-% \end{equation*}
-% wobei $\theta=(\theta_1,\ldots,\theta_n)$ die unbekannten Parameter der Banditen sind.
-
-
-
-
-
-
-
-\subsection{Partiell beobachtbare Markov-Entscheidungsprozesse (POMDP)}
-Partiell beobachtbare Markov-Entscheidungsprozesse (partially observable markov decision processes, POMDPs) sind MDPs
-4/22ff
-7/11ff
-
-
+\input{MDPs.tex}
 
 
 
@@ -668,198 +459,7 @@ V-Funktion: $V^\pi(s)$ Return den ich erwarte wenn ich Policy $\pi$ benutze. $V^
 
 
 
-
-\section{Constraint Satisfaction Problems}
-Constraints Statisfaction Probleme sind häufige auftretende Probleme
-
-
-\begin{definition}[Constraint Satisfaction Problem]
-	Ein \emph{Constraint Satisfaction Problem (CSP)} ist besteht aus $n$ Variablen $x_i$ mit zugehörigen \emph{Domains} $D_i, x_i\in D_i$ und $K$ \emph{Constraints} $C_k$.
-	Jedes Constraint trifft eine Aussage über die Belegung einer Teilmenge aller Constraints. Genauer ist ein Constraint $C_k$ ein Tupel $C_k=(I_k,c_k)$ wobei $I_k\subseteq\simpleset{1,\ldots,n}$ die Teilmenge der betroffenen Variablen ist. Die Abbildung $c_k:D_k\rightarrow \simpleset{0,1}$ bestimmt, ob die Konfiguration der $c_{I_k}\in D_{I_k}$ zulässig ist.
-
-	Das Ziel ist, eine Konfiguration $X=(X_1,\ldots,X_n)$ aller Variablen zu finden, sodass alle Constraints erfüllt sind.
-\end{definition}
-
-
-Ein CSP lässt sich als \emph{Constraint Graph} darstellen. Dies ist ein bipartiter Graph, in dem Variablen als Kreise und Constraints als Kästen dargestellt werden. Ein Beispiel ist der nachfolgende Constraintgraph.
-\noindent
-\begin{center}
-	\begin{tikzpicture}[auto,node distance=2.5cm,semithick, baseline=1em]
-	  \tikzstyle{every state}=[fill=white,circle,draw=black,text=black,align=center]
-
-	  \node[state] (W) {W};
-	  \node[state] (N) [below left of=W] {N};
-	  \node[state] (S) [below right of=W] {S};
-	  \node[state] (T) [above right=0.2cm and 1.5cm of W] {T};
-
-	  \path (W) edge node[rectangle, fill=black, label={above left:$c_2$},below=-3pt]{} (N)
-	  (N) edge node[rectangle, fill=black, label={below:$c_4$},below=-3pt]{} (S)
-	  (W) edge node[rectangle, fill=black, label={above right:$c_3$},below=-3pt]{} (S)
-	  node[rectangle, fill=black, label={above:$c_1$},above left=0.45cm and 0.45cm of W]{} edge (W)
-	  node[below=1.4cm of W] {} edge (W);
-	\end{tikzpicture}
-\end{center}
-\noindent
-Das zugehörige CSP hat 4 Variablen und ebenfalls 4 Constaints. Man sieht, dass die Constraints unterschiedliche Anzahlen an Variablen beeinflussen können.
-Es gilt $I_1=\simpleset{W},I_2=\simpleset{W,N},I_3=\simpleset{W,S}$ und $I_4=\simpleset{N,W,S}$. Auch möglich ist, dass eine Variable von keinem Constraint beeinflusst wird, wie an $T$ zu sehen.
-\begin{itemize}
-	\item $C_1$ ist ein sogenanntes \emph{unäres Constraint}, da $|I_1|=1$.
-	Ein Beispiel wäre $W\neq \text{rot}$.
-	\item Die Constraints $C_2,C_3$ sind \emph{binäre Constraints}, da $|I_2|=|I_3|=2$. Ein Beispiel wäre $W\neq N$.
-	\item Und das Constraint $I_4$ ist ein \emph{Constraint höherer Ordnung}, da $|I_4|>2$.
-\end{itemize}
-
-Sind alle Domainräume endlich und haben die gleiche Größe $d=|D_i|$, dann ist der Aufwand das CSP zu lösen in $\mathcal O(d^n)$.
-
-\subsection{Lösen eines diskreten CSP}
-Der \enqo{brute force} Lösungsalgorithmus für ein CSP ist \emph{sequential assignment}. Der Algorithmus weist Variablen Werte zu, solange dies nicht den Constraints widerspricht. Implementiert wird dies als eine Tiefensuche in einem Baum mit branching factor $(n-l)d$ bei Tiefe $l$. Der Baum hat also $n!d^n$ Blätter!
-
-Eine erste Verbesserung dieses Algorithmus ist \emph{Backtracking Sequential Assignment}. Die entscheidende Erkenntnis ist, dass es für die Vollständigkeit des Algorithmus keine Rolle spielt in welcher Reihenfolge die Variablen gesetzt werden.
-Insbesondere kann man also eine Reihenfolge festlegen und damit den branching factor des Baums drastisch reduzieren. In jeder Tiefe ist der der branching factor $d$, was nur noch $d^n$ Blätter zu Folge hat.
-Hiermit erreicht man den oben angesprochenen Zeitaufwand von $\mathcal O(d^n)$.
-
-08/13
-\begin{lstlisting}
-function backtrackingSearch(csp)
-	return recBacktracking({}, csp)
-end
-
-function recBacktracking(assignment, csp)
-	if assignment.isComplete then return assignment
-	var = selectUnassignedVariable(variables(csp), assignment, csp)
-	for value in orderedDomainValues(var, assignment, csp) do
-		if value consistent with assignment given constraints(csp) then
-			add [var = value] to assignment
-			result = recursiveBacktracking(assignment, csp)
-			if result != failure then return result
-			remove [var = value] from assignment
-		end
-	end
-	return failure
-end
-\end{lstlisting}
-
-\subsection{Möglichkeiten der Verbesserung}
-Mithilfe von simplen Heuristiken kann man die Laufzeit des Lösungsalgorithmus stark verringern. Dabei gibt es mehrere Angriffspunkte zur Optimierung, wir betrachten zunächst welche Variable am besten als nächstes zur Belegung gewählt werden sollte sowie die Reihenfolge der Wertebelegungen.
-\subsubsection{Variablenreihenfolge}
-Mit der \emph{Minimum remaining Values (MRV)}-Heuristik kann man die Breite des Baums stark verringern. Wir wählen die Variable, der als nächstes ein Wert zugewiesen werden soll so, dass sie die wenigsten möglichen Wertebelegungen hat. So ist der branching factor des Baums zu Beginn klein.
-
-Hier können natürlich Fälle auftreten, bei denen diese Entscheidung nicht eindeutig ist. Wir führen die \emph{Degree Heuristic} als Tie Breaker ein. Hier wird immer die Variable als nächstes gewählt, die die meisten Constrains auf noch unbelegte Variablen hat. Damit werden gleichzeitig die möglichen Wertebelegungen der bisher unbelegten Variablen verringert.
-
-\subsubsection{Wertereihenfolge}
-Sind bei einer Variablenbelegung mehrere Werte möglich wählt man mit der \emph{Least Constraining Value}-Heuristik immer den Wert, der noch die meisten Wertebelegungen bei den noch unbelegten Variablen zulässt.
-
-\subsection{Inferenz}
-Mit den bisher besprochenen Optimierungen ist nicht alles abgedeckt. Durch Anwenden von Inferenz können wir frühzeitig feststellen ob eine Lösung überhaupt noch möglich ist, was natürlich bedeutet dass wir das Backtracking früher beginnen können.
-\subsubsection{Constraint Propagation}
-Nach jeder Wertezuweisung können die möglichen Belegungen der übrigen Variablen berechnet werden. Das heißt nach jeder Zuweisung werden aus den Domains $D_i$ entsprechend den Constraints alle nicht mehr möglichen Werte entfernt. Dies kann rekursiv geschehen, da das Löschen eines Werts wiederum die Domains beeinflussen kann.
-Diese Denkweise ist \emph{Inferenz}. Das angewandte Verfahren heißt \emph{Constraint Propagation}, da wir implizite Constraints propagieren und so die Domains verkleinern.
-
-Für binäre Constraints wird Constraint Propagation auch \emph{Arc Consistency} genannt.
-
-Betrachten wir ein kleines Beispiel. Die nachfolgenden Variablen haben alle den gleichen Domainraum $D=\simpleset{\text{\color{red}rot},\text{\color{blue}blau},\text{\color{green}grün}}$. Alle Constraints fordern, wie im Constraintgraph eingetragen, Ungleichheit der Variablen. Es handelt sich hier also um ein Färbungsproblem. Die Domains wurden in die Nähe der Variablen eingetragen.
-\noindent
-\begin{center}
-	\begin{tikzpicture}[auto,node distance=2.5cm,semithick, baseline=1em]
-	  \tikzstyle{every state}=[fill=white,circle,draw=black,text=black,align=center]
-	  \tikzstyle{constraint}=[rectangle, fill=black, below=-3pt]
-
-	  \node[state] (N) {N};
-	  \node[state] (W) [below left=0.7cm and 1.2cm of N] {W};
-	  \node[state] (S) [below of=N] {S};
-	  \node[state] (T) [below right=0.7cm and 1.2cm of N] {T};
-
-	  \path 
-	  (N) edge node[constraint, label={above left:$W\neq N$},below=-3pt]{} (W)
-	  edge node[constraint, label={above right:$N\neq T$}] {} (T)
-	  
-
-	  (S) edge node[constraint, label={below right:$S\neq T$}] {} (T)
-	  edge node[constraint, label={left:$N\neq S$}]{} (N)
-	  edge node[constraint, label={below left:$W\neq S$}]{} (W)
-	  ;
-
-	  \node[constraint] [fill=red,above left=0.1cm and 0.1cm of N] {};
-	  \node[constraint] [fill=green,above=0.1cm of N] {};
-	  \node[constraint] [fill=blue,above right=0.1cm and 0.1cm of N] {};
-
-	  \node[constraint] [fill=red,above left=0.1cm and 0.1cm of W] {};
-	  \node[constraint] [fill=green,left=0.1cm of W] {};
-	  \node[constraint] [fill=blue,below left=0.1cm and 0.1cm of W] {};
-
-	  \node[constraint] [fill=red,below left=0.1cm and 0.1cm of S] {};
-	  \node[constraint] [fill=green,below=0.1cm of S] {};
-	  \node[constraint] [fill=blue,below right=0.1cm and 0.1cm of S] {};
-
-	  \node[constraint] [fill=red,above right=0.1cm and 0.1cm of T] {};
-	  \node[constraint] [fill=green,right=0.1cm of T] {};
-	  \node[constraint] [fill=blue,below right=0.1cm and 0.1cm of T] {};
-	\end{tikzpicture}
-\end{center}
-\noindent
-Färben wir zu erst $W$ rot, sehen wir dass sich die Domains anpassen.
-\noindent
-\begin{center}
-	\begin{tikzpicture}[auto,node distance=2.5cm,semithick, baseline=1em]
-	  \tikzstyle{every state}=[fill=white,circle,draw=black,text=black,align=center]
-	  \tikzstyle{constraint}=[rectangle, fill=black, below=-3pt]
-
-	  \node[state] (N) {N};
-	  \node[state] (W) [draw=red,below left=0.7cm and 1.2cm of N] {W};
-	  \node[state] (S) [below of=N] {S};
-	  \node[state] (T) [below right=0.7cm and 1.2cm of N] {T};
-
-	  \path 
-	  (N) edge node[constraint, label={above left:$W\neq N$},below=-3pt]{} (W)
-	  edge node[constraint, label={above right:$N\neq T$}] {} (T)
-
-	  (S) edge node[constraint, label={below right:$S\neq T$}] {} (T)
-	  edge node[constraint, label={left:$N\neq S$}]{} (N)
-	  edge node[constraint, label={below left:$W\neq S$}]{} (W)
-	  ;
-
-	  \node[constraint] [fill=green,above left=0.1cm and 0.01cm of N] {};
-	  \node[constraint] [fill=blue,above right=0.1cm and 0.01cm of N] {};
-
-	  \node[constraint] [fill=green,below left=0.1cm and 0.01cm of S] {};
-	  \node[constraint] [fill=blue,below right=0.1cm and 0.01cm of S] {};
-
-	  \node[constraint] [fill=red,above right=0.1cm and 0.1cm of T] {};
-	  \node[constraint] [fill=green,right=0.1cm of T] {};
-	  \node[constraint] [fill=blue,below right=0.1cm and 0.1cm of T] {};
-	\end{tikzpicture}
-\end{center}
-\noindent
-Legen wir nun noch $T$ auf grün fest.
-\noindent
-\begin{center}
-	\begin{tikzpicture}[auto,node distance=2.5cm,semithick, baseline=1em]
-	  \tikzstyle{every state}=[fill=white,circle,draw=black,text=black,align=center]
-	  \tikzstyle{constraint}=[rectangle, fill=black, below=-3pt]
-
-	  \node[state] (N) {N};
-	  \node[state] (W) [draw=red,below left=0.7cm and 1.2cm of N] {W};
-	  \node[state] (S) [below of=N] {S};
-	  \node[state] (T) [draw=green,below right=0.7cm and 1.2cm of N] {T};
-
-	  \path 
-	  (N) edge node[constraint, label={above left:$W\neq N$},below=-3pt]{} (W)
-	  edge node[constraint, label={above right:$N\neq T$}] {} (T)
-
-	  (S) edge node[constraint, label={below right:$S\neq T$}] {} (T)
-	  edge node[constraint, label={left:$N\neq S$}]{} (N)
-	  edge node[constraint, label={below left:$W\neq S$}]{} (W)
-	  ;
-
-	  \node[constraint] [fill=blue,above=0.1cm of N] {};
-
-	  \node[constraint] [fill=blue,below=0.1cm of S] {};
-	\end{tikzpicture}
-\end{center}
-\noindent
-Man würde hier bereits nach zwei Schritten sehen, dass für $N$ und $S$ jeweils nur noch ein Wert möglich ist $D_N=D_S=\simpleset{{\color{blue}\text{blau}}}$. Aber die beiden Variablen dürfen wegen dem $N\neq S$ Constraint nicht mit dem selben Wert belegt werden.
-
-Man kann Konsistenz nach \emph{arc consistency} formalisieren, als ein Constraint $X\rightarrow Y$ heißt konsistent, wenn für jeden Wert $x$ von $X$ ein erlaubter Wert $y$ existiert.
+\input{CSPs.tex}
 
 
 
@@ -867,9 +467,6 @@ Man kann Konsistenz nach \emph{arc consistency} formalisieren, als ein Constrain
 
 
 
-\begin{enumerate}
-	\item Lösungsmethoden/Algorithmen: zunächst einfaches Backtracking, dann mit Heuristiken + Constraint Propagation + Arc Consistency/Propagation
-\end{enumerate}
 
 
 
