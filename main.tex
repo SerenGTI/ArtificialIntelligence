@@ -355,10 +355,6 @@ Aber alle Zustände entlang eines Pfads, der zu einem Erfolg führt, sollten akt
 \emph{Eligibility Traces} bewerten (mit Discounting und Skalierungsfaktor) den gesamten Pfad so wird aus der gesamten Vergangenheit bis zum Reward gelernt. Die $Q$-Tabelle wird viel schneller gefüllt und damit schneller gelernt.
 
 
-
-\begin{itemize}
-	\item Experience Replay
-\end{itemize}
 \paragraph{TD}
 Der \emph{Temporal Difference}-Lernalgorithmus lernt aus der Erfahrung $(s,r,s')$, indem die Valuefunktion im Zustand $s$ durch
 \begin{equation*}
@@ -380,37 +376,52 @@ Die Eligibility-Funktion wird immer beim Besuchen des Zustands $s_t$ aktualisier
 \end{equation*}
 Die Funktion \enqo{merkt sich}, dass der Zustand vor kurzem besucht wurde. Unter Verwendung dieser Funktion wird dann die Valuefunktion aktualisiert
 \begin{equation*}
-	\forall s:V_{\text{new}}(s)= V_{\text{old}}(s)+\alpha e(s)*[r_t+\gamma V_{\text{old}}(s_{t+1})-V_{\text{old}}(s_t)].
+	\forall s:V(s)\leftarrow V(s)+\alpha e(s)*[r_t+\gamma V(s_{t+1})-V(s_t)].
 \end{equation*}
 Wichtig ist hierbei, dass alle Zustände aktualisiert werden.
 Zustände die nicht oder lange nicht mehr besucht wurden haben dabei einen kleinen Eligibility-Wert, da man in jedem Schritt das Discounting
 \begin{equation*}
-	\forall s:e(s)\leftrightarrow \gamma\lambda e(s)
+	\forall s:e(s)\leftarrow \gamma\lambda e(s)
 \end{equation*}
 anwendet.
 
 \paragraph{SARSA}
-SARSA verwendet die Erfahrung $(s,a,r,s',a')$ (daher auch der Name) um $Q^\pi$-Funktion zu schätzen.
-\begin{equation*}
-	\forall s:Q(s,a)\leftarrow Q(s,a)+\alpha e(s,a)[r+\gamma Q_{\text{old}}(s',a')-Q_{\text{old}}(s,a)]
-\end{equation*}
+SARSA verwendet die Erfahrung $(s,a,r,s',a')$ um die $Q^\pi$-Funktion zu schätzen. Dabei wird auch wieder die Eligibility $e(s)$ genauso wie oben bereits angesprochen verwendet.
+\begin{align*}
+	\forall s,a:Q(s,a)&\leftarrow Q(s,a)+\alpha e(s,a)*\\
+	&\quad[r+\gamma Q_{\text{old}}(s',a')-Q_{\text{old}}(s,a)]
+\end{align*}
 
 \paragraph{$Q(\lambda)$}
+Das $Q(\lambda)$-Verfahren stellt \emph{das} Verfahren für $Q$-Learning dar, da es von den besprochenen das einzige ist, dass $Q^\ast$ beim Ausführen einer beliebigen Policy ist. $Q(\lambda)$ ist also ein Off-Policy Lernverfahren.
+Mit der Eligibility $e(s)$ wird in jedem Schritt 
+\begin{align*}
+	\forall s,a:Q(s,a)&\leftarrow Q(s,a)+\alpha e(s,a)*\\
+	&\quad[r+\gamma \max_{a'} Q_{\text{old}}(s',a')-Q_{\text{old}}(s,a)]
+\end{align*}
+aktualisiert.
+
+
+
+
+
+\paragraph{Experience Replay}
+In einem großen Zustandsraum kann es schwierig sein eine gesamte $e(s,a)$-Tabelle zu speichern und die Aktualisierung für alle $s,a$ auszuführen. Daher wird hier oft ein \emph{replay buffer}
 \begin{equation*}
-	\forall s:Q(s,a)\leftarrow Q(s,a)+\alpha e(s,a)[r+\gamma \max_{a'} Q_{\text{old}}(s',a')-Q_{\text{old}}(s,a)]
+	D=\simpleset{(s_i,a_i,r_i,s_{i+1})}_{i=0}^t
 \end{equation*}
-
-
-
-
+im Zeitpunkt $t$ gespeichert. Nun wird in jedem Schritt für eine Teilmenge $B\subseteq D$ und die neueste Erfahrung die $Q$-Funktion aktualisiert
+\begin{equation*}
+	Q(s,a)\leftarrow Q(s,a)+\alpha*[r+\gamma\max_{a'}Q(s',a')-Q(s,a)].
+\end{equation*}
+Dies nennt man \emph{Experience Replay}.
 
 \subsection{Modellbasiertes Reinforcement Learning}
-06/23ff
+Im modellbasierten Reinforcement Learning sind Dinge wie Wissen (das über Values hinaus geht), Planung und Antizipation der nächsten Zustände unmöglich.
+Beziehungsweise, noch viel extremer, wenn sich das Ziel ändert, muss der Agent wieder von vorne beginnen, da sich alle bereits gelernten Werte ändern.
 
 
 
-
-Im modellbasierten Reinforcement Learning 
 
 Der Agent wird dann versuchen
 \begin{itemize}
