@@ -1,0 +1,240 @@
+%!TEX root = ./main.tex
+\section{Reinforcement Learning}
+Bisher sind wir davon ausgegangen, die Welt zu kennen. Genauer heißt das, dass $P(s'|s,a)$ und $R(s,a)$ bekannt waren. Damit konnten wir mittels Value- bzw. Q-Iteration (also mit dynamischem Programmieren) optimale Policies bestimmen.
+
+Wenn diese Werte bzw. Verteilungen nicht bekannt sind, befindet man sich im Themengebiet des reinforcement Lernens.
+Ein mit der Welt interagierender Agent sammelt den Datensatz
+\begin{equation*}
+	D=\simpleset{(s_t,a_t,r_t,s_{t+1})}_{t=1}^T
+\end{equation*}
+und versucht daraus zu lernen.
+
+Man muss hierbei unterscheiden, ob ein Modell der Welt bekannt ist oder nicht. Das heißt, ob ein Agent alle möglichen Zustände und Aktionen erfassen kann oder nicht. Je nachdem ob man modellbasiert oder modellfrei lernt sind die Lernansätze unterschiedlich.
+\noindent
+\begin{center}
+	\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3.5cm,
+                semithick, baseline=1em]
+	  \tikzstyle{every state}=[fill=white,rectangle,draw=none,text=black,align=center]
+
+	  \node[state] 		   (exp)                    	{\bf Erfahrung\\$\simpleset{s_t,a_t,s_{t+1},r_t}$};
+	  \node[state]         (beh) [below=5cm of exp] 		{\bf Verhalten\\$\pi$};
+	  \node[state]         (kno) [below left=2cm and -0.6cm of exp] 		{\bf Wissen\\$P(s_{t+1}|a_t,s_t)$};
+	  \node[state]         (val) [below right=2cm and 0cm of exp] 		{\bf Value\\$V,Q$};
+	  
+	  \begin{scope}[transparency group, opacity=0.5]
+	  	\path (exp) edge[bend right=90,red,line width=3pt,-stealth] node[rotate=90,anchor=center,above]{modellbasiert} (beh);
+	  	\path (exp) edge[bend left=90,green,line width=3pt,-stealth] node[rotate=-90,anchor=center,above]{modellfrei}(beh);
+
+	  	\path (exp) edge node[sloped, anchor=center, near end, above]{\centering\small Policy Search} (beh);
+	  	\path (kno) edge node[sloped, anchor=center, near start, fill=white, above=1pt]{\small Dyn. Prog.} (val);
+
+	  \end{scope}
+	  
+
+
+	  
+
+	  \path (exp) edge node[sloped, anchor=center, above]{\small Modell lernen} (kno) edge node[sloped, anchor=center, above]{\small Value Learning} (val)
+	  (kno) edge node[sloped, anchor=center, below]{\small Planung} (beh)
+	  (val) edge node[sloped, anchor=center, below]{\small Aktionswahl} (beh);
+	  
+	\end{tikzpicture}
+\end{center}\noindent
+Wir betrachten die genauen Unterschiede in den nachfolgenden Abschnitten.
+
+\subsection{Modellfreies Reinforcement Learning}
+Im modellfreien Reinforcement-Lernen sind die Übergangsverteilungen sowie die Rewards der Zustände unbekannt, es müssen nicht einmal alle Zustände bekannt werden. 
+Ziel ist es zu lernen, den Value eines Zustands vorherzusagen. Das heißt die Algorithmen werden $V(s)$ bzw. $Q(s,a)$ schätzen. 
+
+\noindent
+\begin{center}
+	\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3.5cm,
+                semithick, baseline=1em]
+	  \tikzstyle{every state}=[fill=white,rectangle,draw=none,text=black,align=center]
+
+	  \node[state] 		   (exp)                    	{\bf Erfahrung\\$\simpleset{s_t,a_t,s_{t+1},r_t}$};
+	  \node[state]         (beh) [below=5cm of exp] 		{\bf Verhalten\\$\pi$};
+	  
+	  \begin{scope}[transparency group, opacity=0.5]
+	  	\path (exp) edge[bend left=90,green,line width=3pt,-stealth] node[rotate=-90,anchor=center,above]{modellfrei}(beh);
+	  \end{scope}
+	  
+
+
+	  \node[state]         (kno) [below left=2cm and -0.6cm of exp] 		{\bf Wissen\\$P(s_{t+1}|a_t,s_t)$};
+	  \node[state]         (val) [below right=2cm and 0cm of exp] 		{\bf Value\\$V,Q$};
+	  
+
+	  \path (exp) edge node[sloped, anchor=center, above, text width=1.7cm]{\small Q-Learning\\TD-Learning} (val)
+	  (val) edge node[sloped, anchor=center, below]{\small Aktionswahl} (beh);
+	  
+	\end{tikzpicture}
+\end{center}\noindent
+
+\paragraph{On-Policy vs. Off-Policy Learning}
+Es werden zwei Arten unterschieden. Ein On-Policy Lernverfahren lernt die Bewertung des Zustands und der Aktionen die von der Policy tatsächlich ausgeführt werden. Das heißt während der Agent $\pi$ ausführt wird auch $Q^\pi$ gelernt.
+
+Ein Off-Policy-Verfahren hingegen lernt die optimale $Q$-Funktion $Q^\ast$ während eine \emph{beliebige} Policy $\pi$ ausgeführt wird. Die Policy wird lediglich zum Sammeln von Daten verwendet. Die Policy, nach der der Agent handelt ist nicht die gleiche wie die gelernte.
+
+
+\subsubsection{Q-Learning}
+Betrachten wir die Bellman-Optimalitätsgleichung für die $Q$-Funktion
+\begin{equation*}
+	Q^\ast(s,a)=R(s,a)+\gamma\sum_{s'}P(s'\,|\, s,a)\max_{a'}Q^\ast(s',a').
+\end{equation*}
+Wir möchten wieder basierend auf dieser Gleichung einen Algorithmus entwickeln der genauso wie die Q-Iteration ein $Q^\ast$ approximiert.
+Doch ohne Modell der Welt kennen wir den zweiten Teil der Formel nicht, weder die möglichen Aktionen $a'$ noch die möglichen Zustände $s'$ sind bekannt.
+
+Stattdessen lernen wir aus einzelnen Erfahrungen $(s,a,r,s')$ um so die $Q$-Funktion zu schätzen. Für jede Erfahrung berechnen wir basierend auf der vorherigen Q-Funktion die neue Approximation
+\begin{align*}
+	Q_{\text{new}}(s,a)&=(1-\alpha)Q_{\text{old}}(s,a)\\
+	&\quad+\alpha[r+\gamma\max_{a'}Q_{\text{old}}(s',a')],
+	\intertext{was wir weiter umformen zu}
+	Q_{\text{new}}(s,a)&=Q_{\text{old}}(s,a)\\
+	&\quad+\alpha\underbrace{[r+\gamma\max_{a'}Q_{\text{old}}(s',a')-Q_{\text{old}}(s,a)]}_{\text{TD error}}.
+\end{align*}
+So wird mit jedem Schritt der sogenannte \emph{temporal difference error} berechnet und als Korrekturfaktor addiert.
+Ist der Reward $r$ größer als der erwartete Reward, das heißt
+\begin{equation*}
+	r>Q_{\text{old}}(s,a)-\gamma \max_{a'}Q_{\text{old}}(s',a'),
+\end{equation*}
+dann wird $Q_{\text{new}}(s,a)$ erhöht. Analog wird der Wert verringert, wenn $r$ kleiner als die Erwartung ist.
+Dieses Verfahren wird \emph{Q-Learning} genannt, es ist ein Off-Policy-Lernalgorithmus.
+
+Besonders bemerkenswert ist, dass eine mit Q-Learning gelernte Q-Funktion beweisbar gegen $Q^\ast$ konvergiert. Für den Beweis wurde lediglich die \emph{mixing property} angenommen. Das heißt, dass es von jedem Zustand aus eine Wahrscheinlichkeit $>0$ gibt in jeden anderen Zustand zu gelangen.
+
+Ein Pseudocode des Q-Learning-Algorithmus sieht dann wie folgt aus.
+\begin{lstlisting}
+(*$Q(s,a)=0$*)
+while unhappy
+	initialize start state (*$s$*)
+	while in episode
+		Choose action (*$a\approx_\epsilon\underset a\argmax Q(s,a)$*)
+		Take action (*$a$*), observe (*$r,s'$*)
+		(*$Q(s,a)\leftarrow Q(s,a)+\alpha[r+\gamma\max_{a'}Q(s',a')-Q(s,a)]$*)
+		(*$s\leftarrow s'$*)
+	end
+end\end{lstlisting}
+Hierbei wurde die sogenannte \emph{epsilon greedy}-Strategie ($\approx_\epsilon$) verwendet. Das bedeutet lediglich, dass mit Wahrscheinlichkeit $\epsilon$ eine zufällige Aktion gewählt wird und nur mit Wahrscheinlichkeit $1-\epsilon$ tatsächlich das gewünschte $\argmax$. In Formel also
+\begin{gather*}
+	a\approx_\epsilon \underset a\argmax Q(s,a)\Longleftrightarrow\\ a=\begin{cases}
+		\text{random},&\text{Wahrscheinlichkeit }\epsilon\\
+		\underset a\argmax Q(s,a),&\text{sonst.}
+	\end{cases}
+\end{gather*}
+Damit wird sichergestellt, dass der Algorithmus genügend exploriert und neue Daten sammelt, also eben nicht immer die optimale Aktion ausführt. Somit werden zum Beispiel lokale Maxima vermieden.
+
+Desweiteren wird der Algorithmus in sogenannten Episoden ausgeführt, nach denen jedes mal der Startzustand wiederhergestellt wird bevor der Agent weiter agieren kann. Oft ist die Anzahl der auszuführenden Schritte in einer Episode festgelegt. Episoden stellen sicher, dass der Agent nicht in non-return areas gefangen bleibt und Lernen für immer verhindert wird (Klippe heruntergefallen, Objekt mit dem interagiert wird ist kaputt,\ldots).
+
+\subsubsection{Varianten des Q-Learning}
+Es gibt viele Varianten des Basis-Q-Learning. Sie
+\paragraph{Eligibility Traces}
+Bisher sind die Lernverfahren sehr langsam, da ein erzielter Reward immer nur einen Schritt \enqo{in die Vergangenheit} weitergereicht wird.
+Aber alle Zustände entlang eines Pfads, der zu einem Erfolg führt, sollten aktualisiert werden. Erhält einen Reward, ist nicht nur die letzte getroffene Entscheidung die entscheidende Aktion, sondern der gesamte gegangene Pfad ist wichtig.
+\emph{Eligibility Traces} bewerten (mit Discounting und Skalierungsfaktor) den gesamten Pfad so wird aus der gesamten Vergangenheit bis zum Reward gelernt. Die $Q$-Tabelle wird viel schneller gefüllt und damit schneller gelernt.
+
+
+\paragraph{Temporal Difference (TD)}
+Dieser Lernalgorithmus lernt aus der Erfahrung $(s,r,s')$, indem die Valuefunktion im Zustand $s$ durch
+\begin{equation*}
+	V(s)\leftarrow V(s)+\alpha [r+\gamma V_{\text{old}}(s')-V_{\text{old}}(s)]
+\end{equation*}
+aktualisiert wird. Der Faktor $\alpha$ ist die Lernrate, ohne diesen wäre der Teil in eckigen Klammern zu stochastisch verrauscht. Die neue Schätzung wird sozusagen mit einem Tiefpass-Filter versehen.
+
+Mit Verwendung von einer längeren Historie kann man ganze Erfahrungssequenzen mit einbeziehen, zum Beispiel $(s_0,r_0,r_1,r_2,s_3)$ und damit
+\begin{equation*}
+	V(s_0)\leftarrow V(s_0)+\alpha [r_0+\gamma r_1+\gamma^2r_2+\gamma^3 V_{\text{old}}(s_3)-V_{\text{old}}(s_0)]
+\end{equation*}
+berechnen. Dies nennt man dann \emph{Temporal Credit Assignment}.
+
+Bei den beiden Verfahren wurde bisher immer nur ein Zustand aktualisiert, wir betrachten nun den $\mathrm{TD}(\lambda)$-Algorithmus, der Eligibility auf elegante Art und Weise unterbringt und damit mit einer Erfahrungssequenz mehrere Zustände aktualisieren kann.
+
+Die Eligibility-Funktion wird immer beim Besuchen des Zustands $s_t$ aktualisiert
+\begin{equation*}
+	e(s_t)\leftarrow e(s_t)+1.
+\end{equation*}
+Die Funktion \enqo{merkt sich}, dass der Zustand vor kurzem besucht wurde. Unter Verwendung dieser Funktion wird dann die Valuefunktion aktualisiert
+\begin{equation*}
+	\forall s:V(s)\leftarrow V(s)+\alpha e(s)*[r_t+\gamma V(s_{t+1})-V(s_t)].
+\end{equation*}
+Wichtig ist hierbei, dass alle Zustände aktualisiert werden.
+Zustände die nicht oder lange nicht mehr besucht wurden haben dabei einen kleinen Eligibility-Wert, da man in jedem Schritt das Discounting
+\begin{equation*}
+	\forall s:e(s)\leftarrow \gamma\lambda e(s)
+\end{equation*}
+anwendet.
+
+\paragraph{SARSA}
+Hier verwenden wir die Erfahrung $(s,a,r,s',a')$ um die $Q^\pi$-Funktion zu schätzen. Dabei wird auch wieder die Eligibility $e(s)$ genauso wie oben bereits angesprochen verwendet.
+\begin{align*}
+	\forall s,a:Q(s,a)&\leftarrow Q(s,a)+\alpha e(s,a)*\\
+	&\quad[r+\gamma Q_{\text{old}}(s',a')-Q_{\text{old}}(s,a)]
+\end{align*}
+
+\paragraph{$Q(\lambda)$}
+Das $Q(\lambda)$-Verfahren stellt \emph{das} Verfahren für $Q$-Learning dar, da es von den besprochenen das einzige ist, dass $Q^\ast$ beim Ausführen einer beliebigen Policy ist. $Q(\lambda)$ ist also ein Off-Policy Lernverfahren.
+Mit der Eligibility $e(s)$ wird in jedem Schritt 
+\begin{align*}
+	\forall s,a:Q(s,a)&\leftarrow Q(s,a)+\alpha e(s,a)*\\
+	&\quad[r+\gamma \max_{a'} Q_{\text{old}}(s',a')-Q_{\text{old}}(s,a)]
+\end{align*}
+aktualisiert.
+
+
+
+
+
+\paragraph{Experience Replay}
+In einem großen Zustandsraum kann es schwierig sein eine gesamte $e(s,a)$-Tabelle zu speichern und die Aktualisierung für alle $s,a$ auszuführen. Daher wird hier oft ein \emph{replay buffer}
+\begin{equation*}
+	D=\simpleset{(s_i,a_i,r_i,s_{i+1})}_{i=0}^t
+\end{equation*}
+im Zeitpunkt $t$ gespeichert. Nun wird in jedem Schritt für eine Teilmenge $B\subseteq D$ und die neueste Erfahrung die $Q$-Funktion aktualisiert
+\begin{equation*}
+	Q(s,a)\leftarrow Q(s,a)+\alpha*[r+\gamma\max_{a'}Q(s',a')-Q(s,a)].
+\end{equation*}
+Dies nennt man \emph{Experience Replay}.
+
+\subsection{Modellbasiertes Reinforcement Learning}
+Im modellbasierten Reinforcement Learning sind Dinge wie Wissen (das über Values hinaus geht), Planung und Antizipation der nächsten Zustände unmöglich.
+Beziehungsweise, noch viel extremer, wenn sich das Ziel ändert, muss der Agent wieder von vorne beginnen, da sich alle bereits gelernten Werte ändern.
+
+In einem modellbasierten Lernszenario können wir anstatt nur Zustände bewerten zu wollen ganze Zusammenhänge lernen. Für einen Datensatz $\simpleset{(s_i,a_i,r_i,s_{i+1})}_{i=1}^t$ wird der Agent lernen den nächsten Zustand vorherzusagen (das Übergangsmodell), genauer $P(s'|s,a)$ und den zugehörigen Reward, also $P(r|s,a)$ zu schätzen.
+Mit diesem Wissen kann der Agent dann planen, welche Schritte auszuführen sind um ein gegebenes Ziel zu erfüllen.
+\noindent
+\begin{center}
+	\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3.5cm,
+                semithick, baseline=1em]
+	  \tikzstyle{every state}=[fill=white,rectangle,draw=none,text=black,align=center]
+
+	  \node[state] 		   (exp)                    	{\bf Erfahrung\\$\simpleset{s_t,a_t,s_{t+1},r_t}$};
+	  \node[state]         (beh) [below=5cm of exp] 		{\bf Verhalten\\$\pi$};
+	  
+	  \begin{scope}[transparency group, opacity=0.5]
+	  	\path (exp) edge[bend right=90,red,line width=3pt,-stealth] node[rotate=90,anchor=center,above]{modellbasiert} (beh);
+	  \end{scope}
+	  
+
+
+	  \node[state]         (kno) [below left=2cm and -0.6cm of exp] 		{\bf Wissen\\$P(s_{t+1}|a_t,s_t)$};
+	  \node[state]         (val) [below right=2cm and 0cm of exp] 		{\bf Value\\$V,Q$};
+	  
+
+	  \path (exp) edge node[sloped, anchor=center, above]{\small Modell lernen} (kno)
+	  (kno) edge node[sloped, anchor=center, below]{\small Planung} (beh);
+	  
+	\end{tikzpicture}
+\end{center}\noindent
+
+\subsubsection{R-MAX}
+Um den Agenten zum Explorieren zu bringen, haben wir bisher die $\epsilon$-greedy-Strategie verwendet. Doch modellbasiert können wir Exploration eleganter forcieren. Dafür verwenden wir eine optimistische Rewardfunktion.
+Sei $c(s,a)$ die Funktion, die zählt, wie oft eine Aktion in einem bestimmten Zustand bereits ausgeführt wurde. Für eine Konstante $m$ schätzen wir den Reward durch
+\begin{equation*}
+	R^{\mathrm{R-MAX}}(s,a)=\begin{cases}
+	R(s,a),&c(s,a)\geq m\\
+	R_{\max},&\text{sonst.}
+	\end{cases}
+\end{equation*}
+Das heißt wir treffen die Annahme, alle Zustände würden maximalen Reward geben, bis sie oft genug besucht wurden. Damit werden unbekannte Zustände oft besucht, wir bringen den Agenten also auf einfache Weise zum systematischen Explorieren.
+
+06/37ff?

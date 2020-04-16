@@ -15,6 +15,7 @@
 \newcommand{\independent}{\ensuremath{\operatorname{Indep}}}
 \newcommand{\enqo}[1]{\glqq #1\grqq\ }
 \definecolor{green}{rgb}{0.2,0.8,0.2}
+\definecolor{observed}{rgb}{0.75,0.75,0.75}
 \lstset{ 
   backgroundcolor=\color{white},
   basicstyle=\footnotesize\ttfamily,
@@ -102,19 +103,15 @@ Auch möglich ist, zu fordern, dass nur die letzte Entscheidung die bestmöglich
 was bedeutet, dass in den Schritten vor der letzten Entscheidung ohne Rücksicht auf die Rewards einer Entscheidung gelernt werden kann. Man setzt hier also den Fokus darauf zu \emph{explorieren} und alle Möglichkeiten auszuprobieren.
 Man versucht mit der \emph{policy} aus \autoref{policy_explore} möglichst viel Wissen zu sammeln. Es wird auf exploration optimiert und versucht so die Unsicherheit über die Wahrscheinlichkeitsverteilung der Banditen zu minimieren.
 
-
-Wissen über das System kann auf zwei Arten und Weisen dargestellt werden. Zum Einen durch den Verlauf der bisherigen Interaktion zwischen Agent und Banditen
+Bisher haben wir Wissen dargestellt als die gesamte Historie der Entscheidungen und damit verbundenen Rewards
 \begin{equation*}
 	h_t=[(a_1,y_1),(a_2,y_2),\ldots,(a_{t-1},y_{t-1})].
 \end{equation*}
-Aber auch eine Darstellung als Wahrscheinlichkeitsverteilung ist möglich. Der sogenannte \emph{belief state} ist
+Aber auch eine Darstellung als Wahrscheinlichkeitsverteilung ist möglich. Der  \emph{belief state} ist
 \begin{equation*}
 	b_t(\theta)=P(\theta|h_t),
 \end{equation*}
 wobei $\theta=(\theta_1,\ldots,\theta_n)$ der Vektor der unbekannten Gewinnwahrscheinlichkeiten der einzelnen Banditen ist.
-
-
-
 
 Wir betrachten im Folgenden einige Möglichkeiten Banditen nach einer Problemstellung zu bewerten und so Entscheidungen zu treffen.
 \subsection{Upper Confidence Bound (UCB)}
@@ -230,246 +227,14 @@ Für viele Teilbäume kann schon sehr früh entschieden werden, dass sie keine g
 
 
 
+\begin{itemize}
+	\item Belief State
+\end{itemize}
+
 
 
 \input{MDPs.tex}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-\section{Reinforcement Learning}
-Bisher sind wir davon ausgegangen, die Welt zu kennen. Genauer heißt das, dass $P(s'|s,a)$ und $R(s,a)$ bekannt waren. Damit konnten wir mittels Value- bzw. Q-Iteration (also mit dynamischem Programmieren) optimale Policies bestimmen.
-
-Wenn diese Werte bzw. Verteilungen nicht bekannt sind, befindet man sich im Themengebiet des reinforcement Lernens.
-Ein mit der Welt interagierender Agent sammelt den Datensatz
-\begin{equation*}
-	D=\simpleset{(s_t,a_t,r_t,s_{t+1})}_{t=1}^T
-\end{equation*}
-und versucht daraus zu lernen.
-
-Man muss hierbei unterscheiden, ob ein Modell der Welt bekannt ist oder nicht. Das heißt, ob ein Agent alle möglichen Zustände und Aktionen erfassen kann oder nicht. Je nachdem ob man modellbasiert oder modellfrei lernt sind die Lernansätze unterschiedlich.
-\noindent
-\begin{center}
-	\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3.5cm,
-                semithick, baseline=1em]
-	  \tikzstyle{every state}=[fill=white,rectangle,draw=none,text=black,align=center]
-
-	  \node[state] 		   (exp)                    	{\bf Erfahrung\\$\simpleset{s_t,a_t,s_{t+1},r_t}$};
-	  \node[state]         (beh) [below=5cm of exp] 		{\bf Verhalten\\$\pi$};
-	  
-	  \begin{scope}[transparency group, opacity=0.5]
-	  	\path (exp) edge[bend right=90,red,line width=3pt,-stealth] node[rotate=90,anchor=center,above]{modellbasiert} (beh);
-	  	\path (exp) edge[bend left=90,green,line width=3pt,-stealth] node[rotate=-90,anchor=center,above]{modellfrei}(beh);
-	  \end{scope}
-	  
-
-
-	  \node[state]         (kno) [below left=2cm and -0.6cm of exp] 		{\bf Wissen\\$P(s_{t+1}|a_t,s_t)$};
-	  \node[state]         (val) [below right=2cm and 0cm of exp] 		{\bf Value\\$V,Q$};
-	  
-
-	  \path (exp) edge node[sloped, anchor=center, above]{\small Modell lernen} (kno) edge node[sloped, anchor=center, above]{\small Value Learning} (val)
-	  (kno) edge node[sloped, anchor=center, below]{\small Planung} (beh)
-	  (val) edge node[sloped, anchor=center, below]{\small Aktionswahl} (beh);
-	  
-	\end{tikzpicture}
-\end{center}\noindent
-Wir betrachten die genauen Unterschiede in den nachfolgenden Abschnitten.
-
-\subsection{Modellfreies Reinforcement Learning}
-Im modellfreien Reinforcement-Lernen sind die Übergangsverteilungen sowie die Rewards der Zustände unbekannt, es müssen nicht einmal alle Zustände bekannt werden. 
-Ziel ist es zu lernen, den Value eines Zustands vorherzusagen. Das heißt die Algorithmen werden $V(s)$ bzw. $Q(s,a)$ schätzen.
-
-\paragraph{On-Policy vs. Off-Policy Learning}
-Es werden zwei Arten unterschieden. Ein On-Policy Lernverfahren lernt die Bewertung des Zustands und der Aktionen die von der Policy tatsächlich ausgeführt werden. Das heißt während der Agent $\pi$ ausführt wird auch $Q^\pi$ gelernt.
-
-Ein Off-Policy-Verfahren hingegen lernt die optimale $Q$-Funktion $Q^\ast$ während eine \emph{beliebige} Policy $\pi$ ausgeführt wird. Die Policy wird lediglich zum Sammeln von Daten verwendet. Die Policy, nach der der Agent handelt ist nicht die gleiche wie die gelernte.
-
-
-\subsubsection{Q-Learning}
-Betrachten wir die Bellman-Optimalitätsgleichung für die $Q$-Funktion
-\begin{equation*}
-	Q^\ast(s,a)=R(s,a)+\gamma\sum_{s'}P(s'\,|\, s,a)\max_{a'}Q^\ast(s',a').
-\end{equation*}
-Wir möchten wieder basierend auf dieser Gleichung einen Algorithmus entwickeln der genauso wie die Q-Iteration ein $Q^\ast$ approximiert.
-Doch ohne Modell der Welt kennen wir den zweiten Teil der Formel nicht, weder die möglichen Aktionen $a'$ noch die möglichen Zustände $s'$ sind bekannt.
-
-Stattdessen lernen wir aus einzelnen Erfahrungen $(s,a,r,s')$ um so die $Q$-Funktion zu schätzen. Für jede Erfahrung berechnen wir basierend auf der vorherigen Q-Funktion die neue Approximation
-\begin{align*}
-	Q_{\text{new}}(s,a)&=(1-\alpha)Q_{\text{old}}(s,a)\\
-	&\quad+\alpha[r+\gamma\max_{a'}Q_{\text{old}}(s',a')],
-	\intertext{was wir weiter umformen zu}
-	Q_{\text{new}}(s,a)&=Q_{\text{old}}(s,a)\\
-	&\quad+\alpha\underbrace{[r+\gamma\max_{a'}Q_{\text{old}}(s',a')-Q_{\text{old}}(s,a)]}_{\text{TD error}}.
-\end{align*}
-So wird mit jedem Schritt der sogenannte \emph{temporal difference error} berechnet und als Korrekturfaktor addiert.
-Ist der Reward $r$ größer als der erwartete Reward, das heißt
-\begin{equation*}
-	r>Q_{\text{old}}(s,a)-\gamma \max_{a'}Q_{\text{old}}(s',a'),
-\end{equation*}
-dann wird $Q_{\text{new}}(s,a)$ erhöht. Analog wird der Wert verringert, wenn $r$ kleiner als die Erwartung ist.
-Dieses Verfahren wird \emph{Q-Learning} genannt, es ist ein Off-Policy-Lernalgorithmus.
-
-Besonders bemerkenswert ist, dass eine mit Q-Learning gelernte Q-Funktion beweisbar gegen $Q^\ast$ konvergiert. Für den Beweis wurde lediglich die \emph{mixing property} angenommen. Das heißt, dass es von jedem Zustand aus eine Wahrscheinlichkeit $>0$ gibt in jeden anderen Zustand zu gelangen.
-
-Ein Pseudocode des Q-Learning-Algorithmus sieht dann wie folgt aus.
-\begin{lstlisting}
-(*$Q(s,a)=0$*)
-while unhappy
-	initialize start state (*$s$*)
-	while in episode
-		Choose action (*$a\approx_\epsilon\underset a\argmax Q(s,a)$*)
-		Take action (*$a$*), observe (*$r,s'$*)
-		(*$Q(s,a)\leftarrow Q(s,a)+\alpha[r+\gamma\max_{a'}Q(s',a')-Q(s,a)]$*)
-		(*$s\leftarrow s'$*)
-	end
-end\end{lstlisting}
-Hierbei wurde die sogenannte \emph{epsilon greedy}-Strategie ($\approx_\epsilon$) verwendet. Das bedeutet lediglich, dass mit Wahrscheinlichkeit $\epsilon$ eine zufällige Aktion gewählt wird und nur mit Wahrscheinlichkeit $1-\epsilon$ tatsächlich das gewünschte $\argmax$. In Formel also
-\begin{gather*}
-	a\approx_\epsilon \underset a\argmax Q(s,a)\Longleftrightarrow\\ a=\begin{cases}
-		\text{random},&\text{Wahrscheinlichkeit }\epsilon\\
-		\underset a\argmax Q(s,a),&\text{sonst.}
-	\end{cases}
-\end{gather*}
-Damit wird sichergestellt, dass der Algorithmus genügend exploriert und neue Daten sammelt, also eben nicht immer die optimale Aktion ausführt. Somit werden zum Beispiel lokale Maxima vermieden.
-
-Desweiteren wird der Algorithmus in sogenannten Episoden ausgeführt, nach denen jedes mal der Startzustand wiederhergestellt wird bevor der Agent weiter agieren kann. Oft ist die Anzahl der auszuführenden Schritte in einer Episode festgelegt. Episoden stellen sicher, dass der Agent nicht in non-return areas gefangen bleibt und Lernen für immer verhindert wird (Klippe heruntergefallen, Objekt mit dem interagiert wird ist kaputt,\ldots).
-
-\subsubsection{Varianten des Q-Learning}
-Es gibt viele Varianten des Basis-Q-Learning. Sie
-\paragraph{Eligibility Traces}
-Bisher sind die Lernverfahren sehr langsam, da ein erzielter Reward immer nur einen Schritt \enqo{in die Vergangenheit} weitergereicht wird.
-Aber alle Zustände entlang eines Pfads, der zu einem Erfolg führt, sollten aktualisiert werden. Erhält einen Reward, ist nicht nur die letzte getroffene Entscheidung die entscheidende Aktion, sondern der gesamte gegangene Pfad ist wichtig.
-\emph{Eligibility Traces} bewerten (mit Discounting und Skalierungsfaktor) den gesamten Pfad so wird aus der gesamten Vergangenheit bis zum Reward gelernt. Die $Q$-Tabelle wird viel schneller gefüllt und damit schneller gelernt.
-
-
-\paragraph{TD}
-Der \emph{Temporal Difference}-Lernalgorithmus lernt aus der Erfahrung $(s,r,s')$, indem die Valuefunktion im Zustand $s$ durch
-\begin{equation*}
-	V(s)\leftarrow V(s)+\alpha [r+\gamma V_{\text{old}}(s')-V_{\text{old}}(s)]
-\end{equation*}
-aktualisiert wird.
-
-Mit Verwendung von einer längeren Historie kann man ganze Erfahrungssequenzen mit einbeziehen, zum Beispiel $(s_0,r_0,r_1,r_2,s_3)$ und damit
-\begin{equation*}
-	V(s_0)\leftarrow V(s_0)+\alpha [r_0+\gamma r_1+\gamma^2r_2+\gamma^3 V_{\text{old}}(s_3)-V_{\text{old}}(s_0)]
-\end{equation*}
-berechnen. Dies nennt man dann \emph{Temporal Credit Assignment}.
-
-Bei den beiden Verfahren wurde bisher immer nur ein Zustand aktualisiert, wir betrachten nun den $\mathrm{TD}(\lambda)$-Algorithmus, der Eligibility auf elegante Art und Weise unterbringt und damit mit einer Erfahrungssequenz mehrere Zustände aktualisieren kann.
-
-Die Eligibility-Funktion wird immer beim Besuchen des Zustands $s_t$ aktualisiert
-\begin{equation*}
-	e(s_t)\leftarrow e(s_t)+1.
-\end{equation*}
-Die Funktion \enqo{merkt sich}, dass der Zustand vor kurzem besucht wurde. Unter Verwendung dieser Funktion wird dann die Valuefunktion aktualisiert
-\begin{equation*}
-	\forall s:V(s)\leftarrow V(s)+\alpha e(s)*[r_t+\gamma V(s_{t+1})-V(s_t)].
-\end{equation*}
-Wichtig ist hierbei, dass alle Zustände aktualisiert werden.
-Zustände die nicht oder lange nicht mehr besucht wurden haben dabei einen kleinen Eligibility-Wert, da man in jedem Schritt das Discounting
-\begin{equation*}
-	\forall s:e(s)\leftarrow \gamma\lambda e(s)
-\end{equation*}
-anwendet.
-
-\paragraph{SARSA}
-SARSA verwendet die Erfahrung $(s,a,r,s',a')$ um die $Q^\pi$-Funktion zu schätzen. Dabei wird auch wieder die Eligibility $e(s)$ genauso wie oben bereits angesprochen verwendet.
-\begin{align*}
-	\forall s,a:Q(s,a)&\leftarrow Q(s,a)+\alpha e(s,a)*\\
-	&\quad[r+\gamma Q_{\text{old}}(s',a')-Q_{\text{old}}(s,a)]
-\end{align*}
-
-\paragraph{$Q(\lambda)$}
-Das $Q(\lambda)$-Verfahren stellt \emph{das} Verfahren für $Q$-Learning dar, da es von den besprochenen das einzige ist, dass $Q^\ast$ beim Ausführen einer beliebigen Policy ist. $Q(\lambda)$ ist also ein Off-Policy Lernverfahren.
-Mit der Eligibility $e(s)$ wird in jedem Schritt 
-\begin{align*}
-	\forall s,a:Q(s,a)&\leftarrow Q(s,a)+\alpha e(s,a)*\\
-	&\quad[r+\gamma \max_{a'} Q_{\text{old}}(s',a')-Q_{\text{old}}(s,a)]
-\end{align*}
-aktualisiert.
-
-
-
-
-
-\paragraph{Experience Replay}
-In einem großen Zustandsraum kann es schwierig sein eine gesamte $e(s,a)$-Tabelle zu speichern und die Aktualisierung für alle $s,a$ auszuführen. Daher wird hier oft ein \emph{replay buffer}
-\begin{equation*}
-	D=\simpleset{(s_i,a_i,r_i,s_{i+1})}_{i=0}^t
-\end{equation*}
-im Zeitpunkt $t$ gespeichert. Nun wird in jedem Schritt für eine Teilmenge $B\subseteq D$ und die neueste Erfahrung die $Q$-Funktion aktualisiert
-\begin{equation*}
-	Q(s,a)\leftarrow Q(s,a)+\alpha*[r+\gamma\max_{a'}Q(s',a')-Q(s,a)].
-\end{equation*}
-Dies nennt man \emph{Experience Replay}.
-
-\subsection{Modellbasiertes Reinforcement Learning}
-Im modellbasierten Reinforcement Learning sind Dinge wie Wissen (das über Values hinaus geht), Planung und Antizipation der nächsten Zustände unmöglich.
-Beziehungsweise, noch viel extremer, wenn sich das Ziel ändert, muss der Agent wieder von vorne beginnen, da sich alle bereits gelernten Werte ändern.
-
-
-
-
-Der Agent wird dann versuchen
-\begin{itemize}
-	\item den nächsten Zustand vorherzusagen, genauer $P(s'|s,a)$ und
-	\item den zugehörigen Reward, also $P(r|s,a)$ zu schätzen.
-\end{itemize}
-
-
-
-
-
-
-
-todo
-
-
-\begin{itemize}
-	\item Belief State
-	\item Lernen in MDPs, modellbasiert/modellfrei
-	\item Diskussion Grenzen von modellfreiem Lernen 
-	\item R-MAX
-\end{itemize}
-
-
-
-
-\subsection{Q-learning} Folie 11/50
-
-
-
-Aus den neuen Erfahrungen die Zustände und Aktionen zu bewerten ist Reinforcement Learning
-
-Schätzen und mit Lernrate $\alpha$ langsam annähern. Ohne Lernrate ist der Teil nach $\alpha$ zu stochastisch verrauscht. Neue Schätzung mit Low-Pass-Filter versehen. Lernen aus einer einzigen Erfahrung.
-
-R(s,a): Erwartungswert der sofortigen Belohnung wenn ich Aktion a in Zustand s ausführe
-
-Q-Funktion: Wie viel 
-
-V-Funktion: $V^\pi(s)$ Return den ich erwarte wenn ich Policy $\pi$ benutze. $V^\ast$ optimales Verhalten
-
-
-
-
-
-
-
-
-
+\input{RL.tex}
 \input{CSPs.tex}
 
 
@@ -479,20 +244,7 @@ V-Funktion: $V^\pi(s)$ Return den ich erwarte wenn ich Policy $\pi$ benutze. $V^
 
 
 
-
-
 \section{Graphische Modelle von probabilistischen Systemen}
-
-
-
-
-
-
-
-
-
-
-
 Unabhängigkeit von Zufallsvariablen sollte klar sein, wir haben wir diese Eigenschaft streng genommen sogar bereits benutzt, der Vollständigkeit halber definieren wir sie hier noch einmal.
 \begin{definition}[Unabhängigkeit]
 	Zwei Zufallsvariablen $X,Y$ heißen \emph{unabhängig}, wenn
@@ -506,8 +258,36 @@ Unabhängigkeit von Zufallsvariablen sollte klar sein, wir haben wir diese Eigen
 \end{definition}
 
 
+
+
+
+
+
+
 \subsection{Bayesnetze}
-09/*ff
+Wir gehen von drei Mengen an Zufallsvariablen aus, die beobachteten Variablen $Z$ und die Mengen $X,Y$ an versteckten Zufallsvariablen, wobei wir Inferenz über $X$, aber nicht $Y$ machen wollen.
+
+Die Posterior-Randwahrscheinlichkeit für eine versteckte Variable $X$ ist
+\begin{equation*}
+	P(X|Z)=\frac{P(X,Z)}{P(Z)}=\frac{1}{P(Z)}\sum_{Y}P(X,Y,Z)
+\end{equation*}
+wobei alle $Y$ versteckt sind.
+
+
+
+
+\begin{align*}
+	P(R|H)&=\frac{1}{P(H)}\sum_SP(H|S,R)*P(S)\circ P(R)\\
+	P(R|H=1)&\propto 
+	\begin{pmatrix}
+		0&0.9\\1&1
+	\end{pmatrix}\begin{pmatrix}
+		0.9\\0.1
+	\end{pmatrix}\circ\begin{pmatrix}
+		0.8\\0.2
+	\end{pmatrix}
+\end{align*}
+
 
 
 
@@ -608,8 +388,15 @@ In Bayesnetzen können wir genauso Inferenz betreiben und aus Informationen der 
 \subsection{Learning}
 \subsection{Structure Learning}
 
+
+
+
+
+
+
+
 \section{Dynamische Modelle}
-\subsection{Markovprozesse und -ketten}
+\subsection{Markovprozesse bzw. -ketten}
 Markovprozess erster Ordnung
 \vspace{1em}
 \noindent
@@ -666,12 +453,93 @@ Markovprozess zweiter Ordnung
 \vspace{1em}
 
 
+\subsection{Versteckte Markovmodelle (HMM)}
 
 
-\begin{itemize}
-	\item Markov Prozesse
-	\item Hidden Markov Models
-\end{itemize}
+\noindent
+\begin{center}
+	\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=1.3cm,
+                    semithick, baseline=1em]
+	  \tikzstyle{every state}=[fill=white,draw=black,text=black,text width=0.5cm, align=center]
+
+	  \node[state] 		   (x0)                    	{\scriptsize$X_{0}$};
+	  \node[state]         (x1) [right of=x0] 		{\scriptsize$X_{1}$};
+	  \node[state]         (x2) [right of=x1] 		{\scriptsize$X_{2}$};
+	  \node[]			(mid) [right of=x2] {$\cdots$};
+	  \node[state]         (x4) [right of=mid]       {\scriptsize$X_{T}$};
+
+	  \node[state, fill=observed] (y0) [below of=x0] {\scriptsize$Y_{0}$};
+	  \node[state, fill=observed] (y1) [below of=x1] {\scriptsize$Y_{1}$};
+	  \node[state, fill=observed] (y2) [below of=x2] {\scriptsize$Y_{2}$};
+	  \node[state, fill=observed] (y4) [below of=x4] {\scriptsize$Y_{T}$};
+
+	  \path (x0) edge (x1) edge (y0)
+	  (x1) edge (x2) edge (y1)
+	  (x2) edge (mid) edge (y2)
+	  (mid) edge (x4)
+	  (x4) edge (y4);
+	\end{tikzpicture}
+\end{center}
+\vspace{1em}
+
+\begin{equation*}
+	P(X_{0:T},Y_{0:T})=P(X_0)\prod_{t=1}^TP(X_t|X_{t-1})\prod_{t=0}^TP(Y_t|X_t)
+\end{equation*}
+
+\subsection{Message Passing}
+
+
+\noindent
+\begin{center}
+	\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=2cm,
+                    semithick, baseline=1em]
+	  \tikzstyle{every state}=[fill=white,draw=black,text=black,text width=0.4cm, align=center]
+
+	  \node[state] 		   (x)                    	{$X$};
+	  \node[state]         (y) [right of=x] 		{$Y$};
+
+	  \node[state, fill=observed] (a) [below=0.7cm of x] {$A$};
+	  \node[state, fill=observed] (b) [below=0.7cm of y] {$B$};
+
+	  \path (x) edge (y) edge (a)
+	  (y) edge (b);
+	\end{tikzpicture}
+\end{center}
+\vspace{1em}
+Sei die die initiale Verteilung
+\begin{equation*}
+	P(X)=\matrix{0.5\\0.5},\\
+\end{equation*}
+sowie die Übergangs- bzw. Sensormatrizen
+\begin{equation*}
+	P(A|X)=P(Y|X)=P(B|Y)=\matrix{0.8&0.2\\0.2&0.8}
+\end{equation*}
+gegeben. Wir können eine Aussage über $Y$ gegeben einer Beobachtung der $A,B$ treffen
+\begin{equation*}
+	P(Y|A=0,B=1)=\mu_{X\rightarrow Y}\circ\mu_{B\rightarrow Y}.
+\end{equation*}
+Die $\mu$ sind \emph{Messages}. Diese berechnen sich allgemein als
+\begin{equation*}
+	\mu_{X_i\rightarrow x_j}=P(X_j|X_i)*P(X_i).
+\end{equation*}
+Wir erhalten also zunächst
+\begin{align*}
+	\mu_{B\rightarrow Y}&=P(Y|B)*P(B)\propto P(B|Y)^T*\vector{0\\1}=\vector{0.2\\0.8}\\
+	\mu_{A\rightarrow X}&=P(X|A)*P(A)\propto P(A|X)^T*\vector{1\\0}=\vector{0.8\\0.2}.
+\end{align*}
+Womit wir zunächst $P(X|A=0)$ und die dritte Message berechnen können
+\begin{align*}
+	\mu_{X\rightarrow Y}&=P(Y|X)*P(X|A=0)\\
+	&\propto P(Y|X)*(\mu_{A\rightarrow X}\circ P(X))\\
+	&=\matrix{0.8&0.2\\0.2&0.8}*\vector{0.4\\0.1}\\
+	&=\vector{0.8*0.4+0.2*0.1\\0.2*0.4+0.8*0.1}=\vector{0.34\\0.16}.
+\end{align*}
+Insgesamt erhalten wir
+\begin{align*}
+	P(Y|A=0,B=1)&\propto\mu_{X\rightarrow Y}\circ\mu_{B\rightarrow Y}\\
+	&=\vector{0.34\\0.16}\circ \vector{0.2\\0.8}=\vector{0.068\\0.128}.
+\end{align*}
+
 
 
 \section{Neuronale Netze}

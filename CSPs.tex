@@ -82,7 +82,11 @@ Mit den bisher besprochenen Optimierungen ist nicht alles abgedeckt. Durch Anwen
 Nach jeder Wertezuweisung können die möglichen Belegungen der übrigen Variablen berechnet werden. Das heißt nach jeder Zuweisung werden aus den Domains $D_i$ entsprechend den Constraints alle nicht mehr möglichen Werte entfernt. Dies kann rekursiv geschehen, da das Löschen eines Werts wiederum die Domains beeinflussen kann.
 Diese Denkweise ist \emph{Inferenz}. Das angewandte Verfahren heißt \emph{Constraint Propagation}, da wir implizite Constraints propagieren und so die Domains verkleinern.
 
-Für binäre Constraints wird Constraint Propagation auch \emph{Arc Consistency} genannt.
+Für binäre Constraints wird Constraint Propagation auch \emph{Arc Consistency} genannt. 
+\begin{definition}[Konsistenz bei Arc Consistency]
+	Ein Constraint $X\rightarrow Y$ \emph{konsistent}, wenn für jeden möglichen Wert $x$ von $X$ ein erlaubter Wert $y$ existiert.
+\end{definition}
+Nach dieser Regel werden Werte aus den Domains entfernt.
 
 Betrachten wir ein kleines Beispiel. Die nachfolgenden Variablen haben alle den gleichen Domainraum $D=\simpleset{\text{\color{red}rot},\text{\color{blue}blau},\text{\color{green}grün}}$. Alle Constraints fordern, wie im Constraintgraph eingetragen, Ungleichheit der Variablen. Es handelt sich hier also um ein Färbungsproblem. Die Domains wurden in die Nähe der Variablen eingetragen.
 \noindent
@@ -124,7 +128,7 @@ Betrachten wir ein kleines Beispiel. Die nachfolgenden Variablen haben alle den 
 	\end{tikzpicture}
 \end{center}
 \noindent
-Färben wir zu erst $W$ rot, sehen wir dass sich die Domains anpassen.
+Färben wir zu erst $W$ rot, müssen die Domains von $N$ und $S$ angepasst werden, damit die Constraints wieder konsistent sind.
 \noindent
 \begin{center}
 	\begin{tikzpicture}[auto,node distance=2.5cm,semithick, baseline=1em]
@@ -157,7 +161,7 @@ Färben wir zu erst $W$ rot, sehen wir dass sich die Domains anpassen.
 	\end{tikzpicture}
 \end{center}
 \noindent
-Legen wir nun noch $T$ auf grün fest.
+Legen wir nun noch $T$ auf grün fest und prüfen wiederum die Domains von $N$ und $S$ auf Konsistenz.
 \noindent
 \begin{center}
 	\begin{tikzpicture}[auto,node distance=2.5cm,semithick, baseline=1em]
@@ -186,7 +190,7 @@ Legen wir nun noch $T$ auf grün fest.
 \noindent
 Man würde hier bereits nach zwei Schritten sehen, dass für $N$ und $S$ jeweils nur noch ein Wert möglich ist $D_N=D_S=\simpleset{{\color{blue}\text{blau}}}$. Aber die beiden Variablen dürfen wegen dem $N\neq S$ Constraint nicht mit dem selben Wert belegt werden.
 
-Man kann Konsistenz nach \emph{arc consistency} formalisieren, als ein Constraint $X\rightarrow Y$ heißt konsistent, wenn für jeden Wert $x$ von $X$ ein erlaubter Wert $y$ existiert.
+
 
 \subsection{CSPs in Baumstruktur}
 Hat der Constraintgraph eine Baumstruktur, so kann man das CSP in $\mathcal O(nd^2)$ lösen. Da dieser Aufwand so viel kleiner ist als $\mathcal O(d^n)$ eines allgemeinen CSP gibt es viele Algorithmen die versuchen ein CSP zu lösen indem es schrittweise in Baumstruktur gebracht wird.
@@ -215,13 +219,13 @@ Zum Beispiel könnten die Variablen dieses Constraintgraphen folgendermaßen ang
                     semithick, baseline=1em]
 	  \tikzstyle{every state}=[fill=white,draw=black,text=black]
 
-	  \node[state] 		   (A)         {A};
-	  \node[state]         (B) [right of=A] 		{B};
-	  \node[state]         (C) [right of=B] 		{C};
+	  \node[state] 		   (A)         {A$_1$};
+	  \node[state]         (B) [right of=A] 		{B$_2$};
+	  \node[state]         (C) [right of=B] 		{C$_3$};
 
-	  \node[state]         (D) [right of=C] 		{D};
-	  \node[state]         (E) [right of=D]       {E};
-	  \node[state]         (F) [right of=E]       {F};
+	  \node[state]         (D) [right of=C] 		{D$_4$};
+	  \node[state]         (E) [right of=D]       {E$_5$};
+	  \node[state]         (F) [right of=E]       {F$_6$};
 
 	  \path (A) edge (B)
 	  (B) edge (C) edge[in=135, out=45] (D)
@@ -233,7 +237,7 @@ Anschließend wird über diese Anordnung iteriert.
 Von den Blättern zur Wurzel, d.h. für $j$ von $n$ bis $2$ werden alle Wertebelegungen aus $D_{\mathrm{Parent}(X_j)}$ gelöscht, die nicht konsistent mit dem Constraint zwischen $X_j$ und seinem Elternknoten sind.
 Anschließend können von der Wurzel zu den Blättern hin Werte zugewiesen werden.
 Das heißt für $j$ von $1$ bis $n$ wird $X_j$ ein Wert zugewiesen, der konsistent mit der Belegung von $\mathrm{Parent}(X_j)$ ist.
-Nach der Definition von Konsistenz muss es für jede noch mögliche Belegung des Elternknotens mindestens eine Belegung von $X_j$ geben.
+Nach der Definition von Konsistenz muss es für jede noch mögliche Belegung des Elternknotens mindestens eine zulässige Belegung von $X_j$ geben.
 
 Wir wissen nun, dass man solche CSPs einfach lösen kann und möchten dies auf allgemeinere CSPs anwenden.
 
